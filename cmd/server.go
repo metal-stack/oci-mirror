@@ -5,15 +5,15 @@ import (
 	"log/slog"
 
 	apiv1 "github.com/metal-stack/oci-mirror/api/v1"
-	"github.com/metal-stack/oci-mirror/pkg/ocisync"
+	"github.com/metal-stack/oci-mirror/pkg/mirror"
 )
 
 type server struct {
 	log    *slog.Logger
-	config apiv1.SyncConfig
+	config apiv1.Config
 }
 
-func newServer(log *slog.Logger, config apiv1.SyncConfig) *server {
+func newServer(log *slog.Logger, config apiv1.Config) *server {
 	return &server{
 		log:    log,
 		config: config,
@@ -22,9 +22,9 @@ func newServer(log *slog.Logger, config apiv1.SyncConfig) *server {
 
 func (s *server) run() error {
 	s.log.Info("run")
-	syncher := ocisync.New(s.log, s.config)
+	m := mirror.New(s.log, s.config)
 
-	err := syncher.Sync(context.Background())
+	err := m.Mirror(context.Background())
 	if err != nil {
 		s.log.Error("error synching images", "error", err)
 		return err

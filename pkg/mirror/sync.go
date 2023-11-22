@@ -1,4 +1,4 @@
-package ocisync
+package mirror
 
 import (
 	"context"
@@ -15,19 +15,19 @@ import (
 	apiv1 "github.com/metal-stack/oci-mirror/api/v1"
 )
 
-type syncher struct {
+type mirror struct {
 	log    *slog.Logger
-	config apiv1.SyncConfig
+	config apiv1.Config
 }
 
-func New(log *slog.Logger, config apiv1.SyncConfig) *syncher {
-	return &syncher{
+func New(log *slog.Logger, config apiv1.Config) *mirror {
+	return &mirror{
 		log:    log,
 		config: config,
 	}
 }
 
-func (s *syncher) Sync(ctx context.Context) error {
+func (s *mirror) Mirror(ctx context.Context) error {
 	var opts []crane.Option
 
 	var errs []error

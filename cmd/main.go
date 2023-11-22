@@ -43,7 +43,7 @@ var (
 			if err != nil {
 				return fmt.Errorf("unable to read config file:%w", err)
 			}
-			var config apiv1.SyncConfig
+			var config apiv1.Config
 			err = yaml.Unmarshal(raw, &config)
 			if err != nil {
 				return fmt.Errorf("unable to parse config file:%w", err)

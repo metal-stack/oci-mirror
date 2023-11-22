@@ -1,4 +1,4 @@
-package ocisync
+package mirror
 
 import (
 	"context"
@@ -47,8 +47,8 @@ func TestSync(t *testing.T) {
 	err = crane.Push(img, srcFoo+":1.0.2")
 	require.NoError(t, err)
 
-	config := apiv1.SyncConfig{
-		Images: []apiv1.ImageSync{
+	config := apiv1.Config{
+		Images: []apiv1.ImageMirror{
 			{
 				Source:      srcAlpine,
 				Destination: fmt.Sprintf("%s:%d/library/alpine", dstip, dstport),
@@ -77,7 +77,7 @@ func TestSync(t *testing.T) {
 	}
 
 	syncher := New(slog.Default(), config)
-	err = syncher.Sync(context.Background())
+	err = syncher.Mirror(context.Background())
 	require.NoError(t, err)
 
 	tags, err := crane.ListTags(fmt.Sprintf("%s:%d/library/alpine", dstip, dstport))
