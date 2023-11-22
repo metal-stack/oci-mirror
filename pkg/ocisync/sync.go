@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"slices"
+	"sort"
 
 	"github.com/google/go-containerregistry/pkg/crane"
 
@@ -45,13 +46,15 @@ func (s *syncher) Sync(ctx context.Context) error {
 			continue
 		}
 
+		var tagsToCopy = make(map[string]string)
+		var semverTags []*semver.Version
+
 		for _, tag := range tags {
 			src := image.Source + ":" + tag
 			dst := image.Destination + ":" + tag
 
-			copy := false
 			if slices.Contains(image.Match.Tags, tag) {
-				copy = true
+				tagsToCopy[src] = dst
 			}
 
 			if image.Match.Pattern != nil {
@@ -68,19 +71,40 @@ func (s *syncher) Sync(ctx context.Context) error {
 					continue
 				}
 				if c.Check(v) {
-					copy = true
-				}
-			}
-			if copy {
-				err := crane.Copy(src, dst, crane.WithNoClobber(true), crane.WithContext(ctx))
-				if err != nil {
-					s.log.Error("unable to copy", "source", src, "dst", dst, "error", err)
-					errs = append(errs, err)
+					tagsToCopy[src] = dst
 				}
 			}
 
+			if image.Match.Last != nil && *image.Match.Last > 0 {
+				v, err := semver.NewVersion(tag)
+				if err != nil {
+					continue
+				}
+				semverTags = append(semverTags, v)
+			}
 		}
 
+		s.log.Info("semver", "unsorted", semverTags)
+		sort.Sort(semver.Collection(semverTags))
+		s.log.Info("semver", "sorted", semverTags)
+
+		if image.Match.Last != nil {
+			for _, v := range semverTags[len(semverTags)-int(*image.Match.Last):] {
+				if slices.Contains(tags, v.String()) {
+					src := image.Source + ":" + v.String()
+					dst := image.Destination + ":" + v.String()
+					tagsToCopy[src] = dst
+				}
+			}
+		}
+
+		for src, dst := range tagsToCopy {
+			err := crane.Copy(src, dst, crane.WithNoClobber(true), crane.WithContext(ctx))
+			if err != nil {
+				s.log.Error("unable to copy", "source", src, "dst", dst, "error", err)
+				errs = append(errs, err)
+			}
+		}
 	}
 
 	if len(errs) > 0 {

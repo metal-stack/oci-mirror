@@ -13,22 +13,16 @@ import (
 )
 
 var (
-	serverEndpointFlag = &cli.StringFlag{
-		Name:  "server-endpoint",
-		Usage: "server endpoint",
-		Value: "localhost:8080",
-	}
 	configMapFlag = &cli.StringFlag{
 		Name:  "sync-config",
 		Usage: "path to sync-config-map",
 		Value: "oci-mirror.yaml",
 	}
 
-	serveCmd = &cli.Command{
-		Name:  "serve",
-		Usage: "start the oci mirror",
+	syncCmd = &cli.Command{
+		Name:  "sync",
+		Usage: "sync images as specified in configuration",
 		Flags: []cli.Flag{
-			serverEndpointFlag,
 			configMapFlag,
 		},
 		Action: func(ctx *cli.Context) error {
@@ -58,7 +52,7 @@ func main() {
 		Name:  "oci-mirror",
 		Usage: "oci mirror server",
 		Commands: []*cli.Command{
-			serveCmd,
+			syncCmd,
 		},
 	}
 

@@ -37,6 +37,16 @@ func TestSync(t *testing.T) {
 	err = crane.Push(img, srcBusybox+":1.36.0")
 	require.NoError(t, err)
 
+	srcFoo := fmt.Sprintf("%s:%d/library/foo", srcip, srcport)
+	err = crane.Push(img, srcFoo)
+	require.NoError(t, err)
+	err = crane.Push(img, srcFoo+":1.0.0")
+	require.NoError(t, err)
+	err = crane.Push(img, srcFoo+":1.0.1")
+	require.NoError(t, err)
+	err = crane.Push(img, srcFoo+":1.0.2")
+	require.NoError(t, err)
+
 	config := apiv1.SyncConfig{
 		Images: []apiv1.ImageSync{
 			{
@@ -56,6 +66,13 @@ func TestSync(t *testing.T) {
 					Pattern: pointer.Pointer(">= 1.35"),
 				},
 			},
+			{
+				Source:      srcFoo,
+				Destination: fmt.Sprintf("%s:%d/library/foo", dstip, dstport),
+				Match: apiv1.Match{
+					Last: pointer.Pointer(int64(2)),
+				},
+			},
 		},
 	}
 
@@ -71,6 +88,10 @@ func TestSync(t *testing.T) {
 	tags, err = crane.ListTags(fmt.Sprintf("%s:%d/library/busybox", dstip, dstport))
 	require.NoError(t, err)
 	require.ElementsMatch(t, []string{"1.35.0", "1.36.0"}, tags)
+
+	tags, err = crane.ListTags(fmt.Sprintf("%s:%d/library/foo", dstip, dstport))
+	require.NoError(t, err)
+	require.ElementsMatch(t, []string{"1.0.1", "1.0.2"}, tags)
 }
 
 func startRegistry() (string, int, error) {

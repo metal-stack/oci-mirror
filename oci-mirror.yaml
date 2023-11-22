@@ -1,0 +1,16 @@
+---
+images:
+  - source: "alpine"
+    destination: "localhost:5000/library/alpine"
+    match:
+      tags:
+        - "3.17"
+        - "3.18"
+  - source: "busybox"
+    destination: "localhost:5000/library/busybox"
+    match:
+      pattern: ">= 1.35"
+  - source: "foo"
+    destination: "localhost:5000/library/foo"
+    match:
+      last: 2
