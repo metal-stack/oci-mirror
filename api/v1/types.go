@@ -1,11 +1,7 @@
 package v1
 
-import "time"
-
 // SyncConfig defines which images should be synced
 type SyncConfig struct {
-	// Interval in which the images should be synched.
-	Interval time.Duration 
 	// Images is a list of repositories to sync
 	Images []ImageSync
 }
@@ -14,8 +10,8 @@ type SyncConfig struct {
 type ImageSync struct {
 	// Source defines from which repo the images should pulled from
 	Source string
-	// Target defines the new image repo the Source should be rewritten
-	Target string
+	// Destination defines the new image repo the Source should be rewritten
+	Destination string
 	// Match defines which images to sync
 	Match Match
 }
@@ -27,4 +23,6 @@ type Match struct {
 	Tags []string
 	// Pattern defines a pattern of tags to sync
 	Pattern *string
+	// Last defines how many of the latest count tags should be synced
+	Last *int64
 }

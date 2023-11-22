@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log/slog"
-	"time"
 
 	apiv1 "github.com/metal-stack/oci-mirror/api/v1"
 	"github.com/metal-stack/oci-mirror/pkg/ocisync"
@@ -24,8 +23,11 @@ func newServer(log *slog.Logger, config apiv1.SyncConfig) *server {
 func (s *server) run() error {
 	s.log.Info("run")
 	syncher := ocisync.New(s.log, s.config)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	// TODO do this in a loop
-	return syncher.Sync(ctx)
+
+	err := syncher.Sync(context.Background())
+	if err != nil {
+		s.log.Error("error synching images", "error", err)
+		return err
+	}
+	return nil
 }
