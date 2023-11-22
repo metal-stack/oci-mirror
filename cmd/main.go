@@ -9,7 +9,7 @@ import (
 	apiv1 "github.com/metal-stack/oci-mirror/api/v1"
 
 	"github.com/urfave/cli/v2"
-	"gopkg.in/yaml.v3"
+	"sigs.k8s.io/yaml"
 )
 
 var (
@@ -18,16 +18,25 @@ var (
 		Usage: "path to sync-config-map",
 		Value: "oci-mirror.yaml",
 	}
+	debugFlag = &cli.BoolFlag{
+		Name:  "debug",
+		Usage: "enable debug logging",
+		Value: false,
+	}
 
 	syncCmd = &cli.Command{
 		Name:  "sync",
 		Usage: "sync images as specified in configuration",
 		Flags: []cli.Flag{
+			debugFlag,
 			configMapFlag,
 		},
 		Action: func(ctx *cli.Context) error {
-
-			jsonHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{})
+			level := slog.LevelInfo
+			if ctx.Bool(debugFlag.Name) {
+				level = slog.LevelDebug
+			}
+			jsonHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})
 			log := slog.New(jsonHandler)
 
 			raw, err := os.ReadFile(ctx.String(configMapFlag.Name))
@@ -35,7 +44,10 @@ var (
 				return fmt.Errorf("unable to read config file:%w", err)
 			}
 			var config apiv1.SyncConfig
-			yaml.Unmarshal(raw, &config)
+			err = yaml.Unmarshal(raw, &config)
+			if err != nil {
+				return fmt.Errorf("unable to parse config file:%w", err)
+			}
 
 			s := newServer(log, config)
 			if err := s.run(); err != nil {

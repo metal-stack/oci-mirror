@@ -4,6 +4,19 @@ package v1
 type SyncConfig struct {
 	// Images is a list of repositories to sync
 	Images []ImageSync `json:"images,omitempty"`
+	// Registries defines registries with authentication
+	Registries map[string]Registry `json:"registries,omitempty"`
+}
+
+// Registry Defines a registry which requires authentication
+type Registry struct {
+	Auth RegistryAuth `json:"auth,omitempty"`
+}
+
+// RegistryAuth is the authentication for a registry
+type RegistryAuth struct {
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
 }
 
 // ImageSync defines the sync configuration for a single Repo

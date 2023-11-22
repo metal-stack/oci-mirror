@@ -1,4 +1,15 @@
 ---
+# destination registries which requires authentication
+registries:
+  "docker.io":
+    auth:
+      username:
+      password:
+  "localhost:5000":
+    auth:
+      username: 
+      password: 
+# images to mirror
 images:
   - source: "alpine"
     destination: "localhost:5000/library/alpine"

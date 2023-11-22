@@ -7,7 +7,9 @@ import (
 	"slices"
 	"sort"
 
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/google/go-containerregistry/pkg/name"
 
 	"github.com/Masterminds/semver/v3"
 	apiv1 "github.com/metal-stack/oci-mirror/api/v1"
@@ -26,12 +28,29 @@ func New(log *slog.Logger, config apiv1.SyncConfig) *syncher {
 }
 
 func (s *syncher) Sync(ctx context.Context) error {
-	// var opts *[]crane.Options
+	var opts []crane.Option
 
 	var errs []error
 	for _, image := range s.config.Images {
+		// Refactor auth
+		dstRef, err := name.ParseReference(image.Destination)
+		if err != nil {
+			return err
+		}
+		registryName := dstRef.Context().Registry.Name()
+		registry, ok := s.config.Registries[registryName]
+		if ok {
+			auth := crane.WithAuth(&authn.Basic{
+				Username: registry.Auth.Username,
+				Password: registry.Auth.Password,
+			})
+			opts = append(opts, auth)
+		}
+		s.log.Info("registry", "name", dstRef.Context().Registry.Name())
+		// crane.WithAuth()
 		if image.Match.AllTags {
-			err := crane.CopyRepository(image.Source, image.Destination, crane.WithNoClobber(true))
+			opts = append(opts, crane.WithNoClobber(true))
+			err := crane.CopyRepository(image.Source, image.Destination, opts...)
 			if err != nil {
 				s.log.Error("unable to copy all images", "image", image.Source, "error", err)
 				errs = append(errs, err)
@@ -66,7 +85,7 @@ func (s *syncher) Sync(ctx context.Context) error {
 				}
 				v, err := semver.NewVersion(tag)
 				if err != nil {
-					s.log.Warn("unable to parse image tag", "tag", tag, "error", err)
+					s.log.Debug("pattern given, ignoring non-semver", "image", image.Source, "tag", tag)
 					// This is not treated as an error
 					continue
 				}
@@ -84,9 +103,7 @@ func (s *syncher) Sync(ctx context.Context) error {
 			}
 		}
 
-		s.log.Info("semver", "unsorted", semverTags)
 		sort.Sort(semver.Collection(semverTags))
-		s.log.Info("semver", "sorted", semverTags)
 
 		if image.Match.Last != nil {
 			for _, v := range semverTags[len(semverTags)-int(*image.Match.Last):] {
