@@ -1,4 +1,4 @@
-package mirror
+package mirror_test
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/metal-stack/metal-lib/pkg/pointer"
 	apiv1 "github.com/metal-stack/oci-mirror/api/v1"
+	"github.com/metal-stack/oci-mirror/pkg/mirror"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -76,8 +77,8 @@ func TestSync(t *testing.T) {
 		},
 	}
 
-	syncher := New(slog.Default(), config)
-	err = syncher.Mirror(context.Background())
+	m := mirror.New(slog.Default(), config)
+	err = m.Mirror(context.Background())
 	require.NoError(t, err)
 
 	tags, err := crane.ListTags(fmt.Sprintf("%s:%d/library/alpine", dstip, dstport))
