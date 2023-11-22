@@ -15,44 +15,34 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func TestSync(t *testing.T) {
+func TestMirror(t *testing.T) {
 	srcip, srcport, err := startRegistry()
 	require.NoError(t, err)
 
 	dstip, dstport, err := startRegistry()
 	require.NoError(t, err)
 
-	img, err := crane.Image(map[string][]byte{})
-	require.NoError(t, err)
 	srcAlpine := fmt.Sprintf("%s:%d/library/alpine", srcip, srcport)
-	err = crane.Push(img, srcAlpine)
-	require.NoError(t, err)
-	err = crane.Push(img, srcAlpine+":3.18")
+	dstAlpine := fmt.Sprintf("%s:%d/library/alpine", dstip, dstport)
+	err = createImage(srcAlpine, "3.18")
 	require.NoError(t, err)
 
 	srcBusybox := fmt.Sprintf("%s:%d/library/busybox", srcip, srcport)
-	err = crane.Push(img, srcBusybox)
-	require.NoError(t, err)
-	err = crane.Push(img, srcBusybox+":1.35.0")
-	require.NoError(t, err)
-	err = crane.Push(img, srcBusybox+":1.36.0")
+	dstBusybox := fmt.Sprintf("%s:%d/library/busybox", dstip, dstport)
+
+	err = createImage(srcBusybox, "1.35.0", "1.36.0")
 	require.NoError(t, err)
 
 	srcFoo := fmt.Sprintf("%s:%d/library/foo", srcip, srcport)
-	err = crane.Push(img, srcFoo)
-	require.NoError(t, err)
-	err = crane.Push(img, srcFoo+":1.0.0")
-	require.NoError(t, err)
-	err = crane.Push(img, srcFoo+":1.0.1")
-	require.NoError(t, err)
-	err = crane.Push(img, srcFoo+":1.0.2")
+	dstFoo := fmt.Sprintf("%s:%d/library/foo", dstip, dstport)
+	err = createImage(srcFoo, "1.0.0", "1.0.1", "1.0.2")
 	require.NoError(t, err)
 
 	config := apiv1.Config{
 		Images: []apiv1.ImageMirror{
 			{
 				Source:      srcAlpine,
-				Destination: fmt.Sprintf("%s:%d/library/alpine", dstip, dstport),
+				Destination: dstAlpine,
 				Match: apiv1.Match{
 					Tags: []string{
 						"3.18",
@@ -62,14 +52,14 @@ func TestSync(t *testing.T) {
 			},
 			{
 				Source:      srcBusybox,
-				Destination: fmt.Sprintf("%s:%d/library/busybox", dstip, dstport),
+				Destination: dstBusybox,
 				Match: apiv1.Match{
 					Pattern: pointer.Pointer(">= 1.35"),
 				},
 			},
 			{
 				Source:      srcFoo,
-				Destination: fmt.Sprintf("%s:%d/library/foo", dstip, dstport),
+				Destination: dstFoo,
 				Match: apiv1.Match{
 					Last: pointer.Pointer(int64(2)),
 				},
@@ -128,4 +118,22 @@ func startRegistry() (string, int, error) {
 	}
 
 	return ip, port.Int(), nil
+}
+
+func createImage(name string, tags ...string) error {
+	img, err := crane.Image(map[string][]byte{})
+	if err != nil {
+		return err
+	}
+	err = crane.Push(img, name)
+	if err != nil {
+		return err
+	}
+	for _, tag := range tags {
+		err := crane.Push(img, name+":"+tag)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
