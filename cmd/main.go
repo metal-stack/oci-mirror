@@ -15,8 +15,8 @@ import (
 
 var (
 	configMapFlag = &cli.StringFlag{
-		Name:  "sync-config",
-		Usage: "path to sync-config-map",
+		Name:  "mirror-config",
+		Usage: "path to mirror-config-map",
 		Value: "oci-mirror.yaml",
 	}
 	debugFlag = &cli.BoolFlag{
@@ -49,6 +49,11 @@ var (
 			err = yaml.Unmarshal(raw, &config)
 			if err != nil {
 				return fmt.Errorf("unable to parse config file:%w", err)
+			}
+
+			err = config.Validate()
+			if err != nil {
+				return fmt.Errorf("config invalid:%w", err)
 			}
 
 			s := newServer(log, config)

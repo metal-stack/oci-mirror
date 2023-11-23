@@ -7,21 +7,32 @@ registries:
       password:
   "localhost:5000":
     auth:
-      username: 
-      password: 
+      username: admin
+      password: secret123
 # images to mirror
 images:
+  # source is the image which should get mirrored
   - source: "alpine"
-    destination: "localhost:5000/library/alpine"
+    # to this new location
+    destination: "172.17.0.1:5000/library/alpine"
+    # match defines which images to mirror
     match:
+      # tags is a list of image tags to mirror
       tags:
         - "3.17"
         - "3.18"
   - source: "busybox"
-    destination: "localhost:5000/library/busybox"
+    destination: "172.17.0.1:5000/library/busybox"
     match:
-      pattern: ">= 1.35"
-  - source: "foo"
-    destination: "localhost:5000/library/foo"
+      # semver will only mirror the tags of the source images which match this semantic version constraint
+      semver: ">= 1.35"
+  - source: "nginx"
+    destination: "172.17.0.1:5000/library/nginx"
     match:
-      last: 2
+      # only mirror the 20 newest semantic versioned image tags of this image
+      last: 20
+  - source: "ubuntu"
+    destination: "172.17.0.1:5000/library/ubuntu"
+    match:
+      # mirror all tags of this image
+      all_tags: true

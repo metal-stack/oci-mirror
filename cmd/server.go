@@ -21,12 +21,10 @@ func newServer(log *slog.Logger, config apiv1.Config) *server {
 }
 
 func (s *server) run() error {
-	s.log.Info("run")
 	m := mirror.New(s.log, s.config)
-
 	err := m.Mirror(context.Background())
 	if err != nil {
-		s.log.Error("error synching images", "error", err)
+		s.log.Error("error mirroring images", "error", err)
 		return err
 	}
 	return nil

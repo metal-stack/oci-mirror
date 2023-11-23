@@ -1,5 +1,12 @@
 package v1
 
+import (
+	"errors"
+	"fmt"
+
+	"github.com/Masterminds/semver/v3"
+)
+
 // Config defines which images should be mirrored
 type Config struct {
 	// Images is a list of repositories to mirror
@@ -34,8 +41,58 @@ type Match struct {
 	AllTags bool `json:"all_tags,omitempty"`
 	// Tags is a exact list of tags to mirror from
 	Tags []string `json:"tags,omitempty"`
-	// Pattern defines a pattern of tags to mirror
-	Pattern *string `json:"pattern,omitempty"`
+	// Semver defines a semantic version of tags to mirror
+	Semver *string `json:"pattern,omitempty"`
 	// Last defines how many of the latest tags should be mirrored
 	Last *int64 `json:"last,omitempty"`
+}
+
+func (c Config) Validate() error {
+	var errs []error
+	sources := make(map[string]bool)
+	destinations := make(map[string]bool)
+	for _, image := range c.Images {
+		if image.Source == "" {
+			errs = append(errs, fmt.Errorf("image.source is empty:%#v", image))
+		}
+		if image.Destination == "" {
+			errs = append(errs, fmt.Errorf("image.destination is empty:%#v", image))
+		}
+
+		if ok := sources[image.Source]; !ok {
+			sources[image.Source] = true
+		} else {
+			errs = append(errs, fmt.Errorf("image source is duplicate:%q", image.Source))
+		}
+
+		if ok := destinations[image.Destination]; !ok {
+			destinations[image.Destination] = true
+		} else {
+			errs = append(errs, fmt.Errorf("image destination is duplicate:%q", image.Destination))
+		}
+
+		if ok := destinations[image.Source]; ok {
+			errs = append(errs, fmt.Errorf("image source is already specified as destination:%q", image.Source))
+		}
+
+		if ok := sources[image.Destination]; ok {
+			errs = append(errs, fmt.Errorf("image destination is already specified as source:%q", image.Destination))
+		}
+
+		if image.Source == image.Destination {
+			errs = append(errs, fmt.Errorf("source and destination are equal %q:%q", image.Source, image.Destination))
+		}
+
+		if image.Match.Semver != nil {
+			_, err := semver.NewConstraint(*image.Match.Semver)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("image.match.semver is invalid, image source:%q, semver:%q %w", image.Source, *image.Match.Semver, err))
+			}
+		}
+	}
+
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+	return nil
 }

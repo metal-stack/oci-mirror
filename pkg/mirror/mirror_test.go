@@ -85,7 +85,7 @@ func TestMirror(t *testing.T) {
 				Source:      srcBusybox,
 				Destination: dstBusybox,
 				Match: apiv1.Match{
-					Pattern: pointer.Pointer(">= 1.35"),
+					Semver: pointer.Pointer(">= 1.35"),
 				},
 			},
 			{

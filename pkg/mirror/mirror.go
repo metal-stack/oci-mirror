@@ -31,11 +31,13 @@ func New(log *slog.Logger, config apiv1.Config) *mirror {
 func (m *mirror) Mirror(ctx context.Context) error {
 	var errs []error
 	for _, image := range m.config.Images {
+		m.log.Info("consider mirror from", "source", image.Source, "destination", image.Destination)
 		opts, err := m.getAuthOption(image)
 		if err != nil {
 			m.log.Warn("unable detect auth, continue unauthenticated", "error", err)
 		}
 		if image.Match.AllTags {
+			m.log.Info("mirror all tags from", "source", image.Source, "destination", image.Destination)
 			err := crane.CopyRepository(image.Source, image.Destination, opts...)
 			if err != nil {
 				m.log.Error("unable to copy all images", "image", image.Source, "error", err)
@@ -62,8 +64,8 @@ func (m *mirror) Mirror(ctx context.Context) error {
 				tagsToCopy[src] = dst
 			}
 
-			if image.Match.Pattern != nil {
-				c, err := semver.NewConstraint(*image.Match.Pattern)
+			if image.Match.Semver != nil {
+				c, err := semver.NewConstraint(*image.Match.Semver)
 				if err != nil {
 					m.log.Error("unable to parse image match pattern", "error", err)
 					errs = append(errs, err)
@@ -103,8 +105,9 @@ func (m *mirror) Mirror(ctx context.Context) error {
 
 		for src, dst := range tagsToCopy {
 			if !strings.HasSuffix(dst, ":latest") {
-				opts = append(opts, crane.WithNoClobber(true))
+				opts = append(opts, crane.WithNoClobber(false))
 			}
+			m.log.Info("mirror from", "source", src, "destination", dst)
 			err := crane.Copy(src, dst, opts...)
 			if err != nil {
 				m.log.Error("unable to copy", "source", src, "dst", dst, "error", err)
@@ -125,8 +128,6 @@ func (m *mirror) getAuthOption(image apiv1.ImageMirror) ([]crane.Option, error) 
 	if err != nil {
 		return nil, err
 	}
-	m.log.Info("registry", "name", dstRef.Context().Registry.Name())
-
 	registryName := dstRef.Context().Registry.Name()
 	registry, ok := m.config.Registries[registryName]
 	if !ok {
