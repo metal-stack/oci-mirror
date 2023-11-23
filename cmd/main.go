@@ -7,6 +7,7 @@ import (
 	"os"
 
 	apiv1 "github.com/metal-stack/oci-mirror/api/v1"
+	"github.com/metal-stack/v"
 
 	"github.com/urfave/cli/v2"
 	"sigs.k8s.io/yaml"
@@ -24,9 +25,9 @@ var (
 		Value: false,
 	}
 
-	syncCmd = &cli.Command{
-		Name:  "sync",
-		Usage: "sync images as specified in configuration",
+	mirrorCmd = &cli.Command{
+		Name:  "mirror",
+		Usage: "mirror images as specified in configuration",
 		Flags: []cli.Flag{
 			debugFlag,
 			configMapFlag,
@@ -39,6 +40,7 @@ var (
 			jsonHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})
 			log := slog.New(jsonHandler)
 
+			log.Info("start mirror", "version", v.V.String())
 			raw, err := os.ReadFile(ctx.String(configMapFlag.Name))
 			if err != nil {
 				return fmt.Errorf("unable to read config file:%w", err)
@@ -51,7 +53,7 @@ var (
 
 			s := newServer(log, config)
 			if err := s.run(); err != nil {
-				log.Error("unable to start server", "error", err)
+				log.Error("unable to start mirror", "error", err)
 				os.Exit(1)
 			}
 			return nil
@@ -64,7 +66,7 @@ func main() {
 		Name:  "oci-mirror",
 		Usage: "oci mirror server",
 		Commands: []*cli.Command{
-			syncCmd,
+			mirrorCmd,
 		},
 	}
 

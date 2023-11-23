@@ -7,6 +7,7 @@ require (
 	github.com/foomo/htpasswd v0.0.0-20200116085101-e3a90e78da9c
 	github.com/google/go-containerregistry v0.16.1
 	github.com/metal-stack/metal-lib v0.14.0
+	github.com/metal-stack/v v1.0.3
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.26.0
 	github.com/urfave/cli/v2 v2.25.7
