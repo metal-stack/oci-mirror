@@ -1,0 +1,73 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: oci-mirror
+spec:
+  schedule: "0 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: oci-mirror
+            image: ghcr.io/metal-stack/oci-mirror
+            imagePullPolicy: IfNotPresent
+            command:
+            - mirror
+            - -mirror-config=/config/oci-mirror.yaml
+            volumeMounts:
+              - name: mirror-config
+                mountPath: /config
+          volumes:
+            - name: mirror-config
+              secret:
+                name: mirror-config
+                items:
+                  - key: oci-mirror.yaml
+                    path: oci-mirror.yaml
+          restartPolicy: OnFailure
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mirror-config
+stringData:
+  oci-mirror.yaml: |
+      # destination registries which requires authentication
+      registries:
+        "docker.io":
+          auth:
+            username:
+            password:
+        "localhost:5000":
+          auth:
+            username: admin
+            password: secret123
+      # images to mirror
+      images:
+        # source is the image which should get mirrored
+        - source: "alpine"
+          # to this new location
+          destination: "172.17.0.1:5000/library/alpine"
+          # match defines which images to mirror
+          match:
+            # tags is a list of image tags to mirror
+            tags:
+              - "3.17"
+              - "3.18"
+        - source: "busybox"
+          destination: "172.17.0.1:5000/library/busybox"
+          match:
+            # semver will only mirror the tags of the source images which match this semantic version constraint
+            semver: ">= 1.35"
+        - source: "nginx"
+          destination: "172.17.0.1:5000/library/nginx"
+          match:
+            # only mirror the 20 newest semantic versioned image tags of this image
+            last: 20
+        - source: "ubuntu"
+          destination: "172.17.0.1:5000/library/ubuntu"
+          match:
+            # mirror all tags of this image
+            all_tags: true
