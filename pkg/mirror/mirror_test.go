@@ -21,9 +21,11 @@ import (
 func TestMirror(t *testing.T) {
 	srcip, srcport, err := startRegistry(nil, nil, nil)
 	require.NoError(t, err)
+	srcRegistry := fmt.Sprintf("%s:%d", srcip, srcport)
 
 	dstip, dstport, err := startRegistry(nil, nil, nil)
 	require.NoError(t, err)
+	dstRegistry := fmt.Sprintf("%s:%d", dstip, dstport)
 
 	f, err := os.CreateTemp("", "htpasswd")
 	require.NoError(t, err)
@@ -39,25 +41,25 @@ func TestMirror(t *testing.T) {
 	}
 	authtip, authport, err := startRegistry(env, pointer.Pointer(f.Name()), pointer.Pointer("/htpasswd"))
 	require.NoError(t, err)
+	authRegistry := fmt.Sprintf("%s:%d", authtip, authport)
 
-	srcAlpine := fmt.Sprintf("%s:%d/library/alpine", srcip, srcport)
-	dstAlpine := fmt.Sprintf("%s:%d/library/alpine", dstip, dstport)
+	srcAlpine := fmt.Sprintf("%s/library/alpine", srcRegistry)
+	dstAlpine := fmt.Sprintf("%s/library/alpine", dstRegistry)
 	err = createImage(srcAlpine, "3.18")
 	require.NoError(t, err)
 
-	srcBusybox := fmt.Sprintf("%s:%d/library/busybox", srcip, srcport)
-	dstBusybox := fmt.Sprintf("%s:%d/library/busybox", dstip, dstport)
+	srcBusybox := fmt.Sprintf("%s/library/busybox", srcRegistry)
+	dstBusybox := fmt.Sprintf("%s/library/busybox", dstRegistry)
 
 	err = createImage(srcBusybox, "1.35.0", "1.36.0")
 	require.NoError(t, err)
 
-	srcFoo := fmt.Sprintf("%s:%d/library/foo", srcip, srcport)
-	dstFoo := fmt.Sprintf("%s:%d/library/foo", dstip, dstport)
+	srcFoo := fmt.Sprintf("%s/library/foo", srcRegistry)
+	dstFoo := fmt.Sprintf("%s/library/foo", dstRegistry)
 	err = createImage(srcFoo, "1.0.0", "1.0.1", "1.0.2")
 	require.NoError(t, err)
 
-	dstAuthFoo := fmt.Sprintf("%s:%d/library/foo", authtip, authport)
-	authRegistry := fmt.Sprintf("%s:%d", authtip, authport)
+	dstAuthFoo := fmt.Sprintf("%s/library/foo", authRegistry)
 
 	config := apiv1.Config{
 		Registries: map[string]apiv1.Registry{
