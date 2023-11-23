@@ -1,10 +1,16 @@
 ---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mirror
+---
 apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: oci-mirror
+  namespace: mirror
 spec:
-  schedule: "0 * * * *"
+  schedule: "*/20 * * * *"
   jobTemplate:
     spec:
       template:
@@ -13,16 +19,16 @@ spec:
           - name: oci-mirror
             image: ghcr.io/metal-stack/oci-mirror
             imagePullPolicy: IfNotPresent
-            command:
+            args:
             - mirror
-            - -mirror-config=/config/oci-mirror.yaml
+            - --mirror-config=/config/oci-mirror.yaml
             volumeMounts:
               - name: mirror-config
                 mountPath: /config
           volumes:
             - name: mirror-config
               secret:
-                name: mirror-config
+                secretName: mirror-config
                 items:
                   - key: oci-mirror.yaml
                     path: oci-mirror.yaml
@@ -32,6 +38,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: mirror-config
+  namespace: mirror
 stringData:
   oci-mirror.yaml: |
       # destination registries which requires authentication
