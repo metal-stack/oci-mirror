@@ -18,6 +18,14 @@ First create a `oci-mirror.yaml` which matches your needs, then run it with the 
 docker run -it -v $PWD/oci-mirror.yaml:/oci-mirror.yaml --rm ghcr.io/metal-stack/oci-mirror mirror
 ```
 
+## Kubernetes
+
+There is a sample deployment manifest available, you can simple run:
+
+```bash
+kubectl apply -f deploy
+```
+
 ## TODO
 
 - [ ] eventually support http(s) artifacts to be stored as OCIs
