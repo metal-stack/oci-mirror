@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"slices"
 	"sort"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/crane"
@@ -27,32 +28,17 @@ func New(log *slog.Logger, config apiv1.Config) *mirror {
 	}
 }
 
-func (s *mirror) Mirror(ctx context.Context) error {
-	var opts []crane.Option
-
+func (m *mirror) Mirror(ctx context.Context) error {
 	var errs []error
-	for _, image := range s.config.Images {
-		// Refactor auth
-		dstRef, err := name.ParseReference(image.Destination)
+	for _, image := range m.config.Images {
+		opts, err := m.getAuthOption(image)
 		if err != nil {
-			return err
+			m.log.Warn("unable detect auth, continue unauthenticated", "error", err)
 		}
-		registryName := dstRef.Context().Registry.Name()
-		registry, ok := s.config.Registries[registryName]
-		if ok {
-			auth := crane.WithAuth(&authn.Basic{
-				Username: registry.Auth.Username,
-				Password: registry.Auth.Password,
-			})
-			opts = append(opts, auth)
-		}
-		s.log.Info("registry", "name", dstRef.Context().Registry.Name())
-		// crane.WithAuth()
 		if image.Match.AllTags {
-			opts = append(opts, crane.WithNoClobber(true))
 			err := crane.CopyRepository(image.Source, image.Destination, opts...)
 			if err != nil {
-				s.log.Error("unable to copy all images", "image", image.Source, "error", err)
+				m.log.Error("unable to copy all images", "image", image.Source, "error", err)
 				errs = append(errs, err)
 			}
 			continue
@@ -60,7 +46,7 @@ func (s *mirror) Mirror(ctx context.Context) error {
 
 		tags, err := crane.ListTags(image.Source)
 		if err != nil {
-			s.log.Error("unable to list tags of", "image", image.Source, "error", err)
+			m.log.Error("unable to list tags of", "image", image.Source, "error", err)
 			errs = append(errs, err)
 			continue
 		}
@@ -79,13 +65,13 @@ func (s *mirror) Mirror(ctx context.Context) error {
 			if image.Match.Pattern != nil {
 				c, err := semver.NewConstraint(*image.Match.Pattern)
 				if err != nil {
-					s.log.Error("unable to parse image match pattern", "error", err)
+					m.log.Error("unable to parse image match pattern", "error", err)
 					errs = append(errs, err)
 					continue
 				}
 				v, err := semver.NewVersion(tag)
 				if err != nil {
-					s.log.Debug("pattern given, ignoring non-semver", "image", image.Source, "tag", tag)
+					m.log.Debug("pattern given, ignoring non-semver", "image", image.Source, "tag", tag)
 					// This is not treated as an error
 					continue
 				}
@@ -116,9 +102,12 @@ func (s *mirror) Mirror(ctx context.Context) error {
 		}
 
 		for src, dst := range tagsToCopy {
-			err := crane.Copy(src, dst, crane.WithNoClobber(true), crane.WithContext(ctx))
+			if !strings.HasSuffix(dst, ":latest") {
+				opts = append(opts, crane.WithNoClobber(true))
+			}
+			err := crane.Copy(src, dst, opts...)
 			if err != nil {
-				s.log.Error("unable to copy", "source", src, "dst", dst, "error", err)
+				m.log.Error("unable to copy", "source", src, "dst", dst, "error", err)
 				errs = append(errs, err)
 			}
 		}
@@ -128,4 +117,25 @@ func (s *mirror) Mirror(ctx context.Context) error {
 		return errors.Join(errs...)
 	}
 	return nil
+}
+
+func (m *mirror) getAuthOption(image apiv1.ImageMirror) ([]crane.Option, error) {
+	var opts []crane.Option
+	dstRef, err := name.ParseReference(image.Destination)
+	if err != nil {
+		return nil, err
+	}
+	m.log.Info("registry", "name", dstRef.Context().Registry.Name())
+
+	registryName := dstRef.Context().Registry.Name()
+	registry, ok := m.config.Registries[registryName]
+	if !ok {
+		return nil, nil
+	}
+	auth := crane.WithAuth(&authn.Basic{
+		Username: registry.Auth.Username,
+		Password: registry.Auth.Password,
+	})
+	opts = append(opts, auth)
+	return opts, nil
 }

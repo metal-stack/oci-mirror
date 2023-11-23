@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"testing"
 
+	"github.com/foomo/htpasswd"
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/metal-stack/metal-lib/pkg/pointer"
 	apiv1 "github.com/metal-stack/oci-mirror/api/v1"
@@ -16,10 +19,25 @@ import (
 )
 
 func TestMirror(t *testing.T) {
-	srcip, srcport, err := startRegistry()
+	srcip, srcport, err := startRegistry(nil, nil, nil)
 	require.NoError(t, err)
 
-	dstip, dstport, err := startRegistry()
+	dstip, dstport, err := startRegistry(nil, nil, nil)
+	require.NoError(t, err)
+
+	f, err := os.CreateTemp("", "htpasswd")
+	require.NoError(t, err)
+	defer os.Remove(f.Name())
+
+	err = htpasswd.SetPassword(f.Name(), "user", "secret", htpasswd.HashBCrypt)
+	require.NoError(t, err)
+
+	env := map[string]string{
+		"REGISTRY_AUTH":                "htpasswd",
+		"REGISTRY_AUTH_HTPASSWD_REALM": "registry-login",
+		"REGISTRY_AUTH_HTPASSWD_PATH":  "/htpasswd",
+	}
+	authtip, authport, err := startRegistry(env, pointer.Pointer(f.Name()), pointer.Pointer("/htpasswd"))
 	require.NoError(t, err)
 
 	srcAlpine := fmt.Sprintf("%s:%d/library/alpine", srcip, srcport)
@@ -38,7 +56,18 @@ func TestMirror(t *testing.T) {
 	err = createImage(srcFoo, "1.0.0", "1.0.1", "1.0.2")
 	require.NoError(t, err)
 
+	dstAuthFoo := fmt.Sprintf("%s:%d/library/foo", authtip, authport)
+	authRegistry := fmt.Sprintf("%s:%d", authtip, authport)
+
 	config := apiv1.Config{
+		Registries: map[string]apiv1.Registry{
+			authRegistry: {
+				Auth: apiv1.RegistryAuth{
+					Username: "user",
+					Password: "secret",
+				},
+			},
+		},
 		Images: []apiv1.ImageMirror{
 			{
 				Source:      srcAlpine,
@@ -64,6 +93,13 @@ func TestMirror(t *testing.T) {
 					Last: pointer.Pointer(int64(2)),
 				},
 			},
+			{
+				Source:      srcFoo,
+				Destination: dstAuthFoo,
+				Match: apiv1.Match{
+					Last: pointer.Pointer(int64(2)),
+				},
+			},
 		},
 	}
 
@@ -71,21 +107,25 @@ func TestMirror(t *testing.T) {
 	err = m.Mirror(context.Background())
 	require.NoError(t, err)
 
-	tags, err := crane.ListTags(fmt.Sprintf("%s:%d/library/alpine", dstip, dstport))
+	tags, err := crane.ListTags(dstAlpine)
 	require.NoError(t, err)
 	require.Len(t, tags, 2)
 	require.Equal(t, []string{"3.18", "latest"}, tags)
 
-	tags, err = crane.ListTags(fmt.Sprintf("%s:%d/library/busybox", dstip, dstport))
+	tags, err = crane.ListTags(dstBusybox)
 	require.NoError(t, err)
 	require.ElementsMatch(t, []string{"1.35.0", "1.36.0"}, tags)
 
-	tags, err = crane.ListTags(fmt.Sprintf("%s:%d/library/foo", dstip, dstport))
+	tags, err = crane.ListTags(dstFoo)
+	require.NoError(t, err)
+	require.ElementsMatch(t, []string{"1.0.1", "1.0.2"}, tags)
+
+	tags, err = crane.ListTags(dstAuthFoo, crane.WithAuth(&authn.Basic{Username: "user", Password: "secret"}))
 	require.NoError(t, err)
 	require.ElementsMatch(t, []string{"1.0.1", "1.0.2"}, tags)
 }
 
-func startRegistry() (string, int, error) {
+func startRegistry(env map[string]string, src, dst *string) (string, int, error) {
 	ctx := context.Background()
 	var (
 		c   testcontainers.Container
@@ -95,6 +135,7 @@ func startRegistry() (string, int, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "registry:2",
 		ExposedPorts: []string{"5000/tcp"},
+		Env:          env,
 		WaitingFor: wait.ForAll(
 			wait.ForLog("listening on"),
 			wait.ForListeningPort("5000/tcp"),
@@ -106,6 +147,12 @@ func startRegistry() (string, int, error) {
 	})
 	if err != nil {
 		return "", 0, err
+	}
+	if src != nil && dst != nil {
+		err = c.CopyFileToContainer(ctx, *src, *dst, 0o777)
+		if err != nil {
+			return "", 0, err
+		}
 	}
 
 	ip, err := c.Host(ctx)
