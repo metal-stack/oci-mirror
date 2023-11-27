@@ -9,115 +9,115 @@ registries:
       password:
 
 images:
-  - source: docker.io/calico/cni:v3.25.0
+  - source: docker.io/calico/cni
     destination: r.fits.cloud/docker.io/calico/cni
     match:
       semver: ">= v3.25.0"
-  - source: docker.io/calico/node:v3.25.0
+  - source: docker.io/calico/node
     destination: r.fits.cloud/docker.io/calico/node
     match:
       semver: ">= v3.25.0"
-  - source: docker.lightbitslabs.com/lightos-csi/lb-csi-plugin:1.9.1
+  - source: docker.lightbitslabs.com/lightos-csi/lb-csi-plugin
     destination: r.fits.cloud/docker.lightbitslabs.com/lightos-csi/lb-csi-plugin
     match:
       semver: ">= 1.9.1"
-  - source: docker.lightbitslabs.com/lightos-csi/lb-nvme-discovery-client:1.9.1
+  - source: docker.lightbitslabs.com/lightos-csi/lb-nvme-discovery-client
     destination: r.fits.cloud/docker.lightbitslabs.com/lightos-csi/lb-nvme-discovery-client
     match:
       semver: ">= 1.9.1"
-  - source: eu.gcr.io/gardener-project/3rd/alpine:3.15.8
+  - source: eu.gcr.io/gardener-project/3rd/alpine
     destination: r.fits.cloud/eu.gcr.io/gardener-project/3rd/alpine
     match:
       semver: ">= 3.15.8"
-  - source: eu.gcr.io/gardener-project/3rd/coredns/coredns:1.10.0
+  - source: eu.gcr.io/gardener-project/3rd/coredns/coredns
     destination: r.fits.cloud/eu.gcr.io/gardener-project/3rd/coredns/coredns
     match:
       semver: ">= 1.10.0"
-  - source: eu.gcr.io/gardener-project/3rd/envoyproxy/envoy-distroless:v1.24.1
+  - source: eu.gcr.io/gardener-project/3rd/envoyproxy/envoy-distroless
     destination: r.fits.cloud/eu.gcr.io/gardener-project/3rd/envoyproxy/envoy-distroless
     match:
       semver: ">= v1.24.1"
-  - source: eu.gcr.io/gardener-project/gardener/apiserver-proxy:v0.12.0
+  - source: eu.gcr.io/gardener-project/gardener/apiserver-proxy
     destination: r.fits.cloud/eu.gcr.io/gardener-project/gardener/apiserver-proxy
     match:
       semver: ">= v0.12.0"
-  - source: eu.gcr.io/gardener-project/gardener/vpn-shoot-client:0.16.0
+  - source: eu.gcr.io/gardener-project/gardener/vpn-shoot-client
     destination: r.fits.cloud/eu.gcr.io/gardener-project/gardener/vpn-shoot-client
     match:
       semver: ">= 0.16.0"
-  - source: ghcr.io/metal-stack/metallb-health-sidecar:v0.1.1
+  - source: ghcr.io/metal-stack/metallb-health-sidecar
     destination: r.fits.cloud/ghcr.io/metal-stack/metallb-health-sidecar
     match:
       semver: ">= v0.1.1"
-  - source: quay.io/metallb/controller:v0.10.3
+  - source: quay.io/metallb/controller
     destination: r.fits.cloud/quay.io/metallb/controller
     match:
       semver: ">= v0.10.3"
-  - source: quay.io/metallb/speaker:v0.10.3
+  - source: quay.io/metallb/speaker
     destination: r.fits.cloud/quay.io/metallb/speaker
     match:
       semver: ">= v0.10.3"
-  - source: quay.io/prometheus/blackbox-exporter:v0.23.0
+  - source: quay.io/prometheus/blackbox-exporter
     destination: r.fits.cloud/quay.io/prometheus/blackbox-exporter
     match:
       semver: ">= v0.23.0"
-  - source: quay.io/prometheus/node-exporter:v1.5.0
+  - source: quay.io/prometheus/node-exporter
     destination: r.fits.cloud/quay.io/prometheus/node-exporter
     match:
       semver: ">= v1.5.0"
-  - source: registry.k8s.io/cpa/cpvpa:v0.8.4
+  - source: registry.k8s.io/cpa/cpvpa
     destination: r.fits.cloud/registry.k8s.io/cpa/cpvpa
     match:
       semver: ">= v0.8.4"
-  - source: registry.k8s.io/kube-proxy:v1.27.8
+  - source: registry.k8s.io/kube-proxy
     destination: r.fits.cloud/registry.k8s.io/kube-proxy
     match:
       semver: ">= v1.27.8"
-  - source: registry.k8s.io/metrics-server/metrics-server:v0.6.3
+  - source: registry.k8s.io/metrics-server/metrics-server
     destination: r.fits.cloud/registry.k8s.io/metrics-server/metrics-server
     match:
       semver: ">= v0.6.3"
-  - source: registry.k8s.io/node-problem-detector/node-problem-detector:v0.8.13
+  - source: registry.k8s.io/node-problem-detector/node-problem-detector
     destination: r.fits.cloud/registry.k8s.io/node-problem-detector/node-problem-detector
     match:
       semver: ">= v0.8.13"
-  - source: registry.k8s.io/sig-storage/csi-attacher:v3.5.0
+  - source: registry.k8s.io/sig-storage/csi-attacher
     destination: r.fits.cloud/registry.k8s.io/sig-storage/csi-attacher
     match:
       semver: ">= v3.5.0"
-  - source: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.5.1
+  - source: registry.k8s.io/sig-storage/csi-node-driver-registrar
     destination: r.fits.cloud/registry.k8s.io/sig-storage/csi-node-driver-registrar
     match:
       semver: ">= v2.5.1"
-  - source: registry.k8s.io/sig-storage/csi-provisioner:v2.2.2
+  - source: registry.k8s.io/sig-storage/csi-provisioner
     destination: r.fits.cloud/registry.k8s.io/sig-storage/csi-provisioner
     match:
       semver: ">= v2.2.2"
-  - source: registry.k8s.io/sig-storage/csi-resizer:v1.5.0
+  - source: registry.k8s.io/sig-storage/csi-resizer
     destination: r.fits.cloud/registry.k8s.io/sig-storage/csi-resizer
     match:
       semver: ">= v1.5.0"
-  - source: registry.k8s.io/sig-storage/csi-snapshotter:v6.1.0
+  - source: registry.k8s.io/sig-storage/csi-snapshotter
     destination: r.fits.cloud/registry.k8s.io/sig-storage/csi-snapshotter
     match:
       semver: ">= v6.1.0"
-  - source: registry.k8s.io/sig-storage/snapshot-controller:v6.1.0
+  - source: registry.k8s.io/sig-storage/snapshot-controller
     destination: r.fits.cloud/registry.k8s.io/sig-storage/snapshot-controller
     match:
       semver: ">= v6.1.0"
-  - source: r.metal-stack.io/csi-lvm-controller:v0.7.0
+  - source: r.metal-stack.io/csi-lvm-controller
     destination: r.fits.cloud/r.metal-stack.io/csi-lvm-controller
     match:
       semver: ">= v0.7.0"
-  - source: r.metal-stack.io/csi-lvm-provisioner:v0.7.0
+  - source: r.metal-stack.io/csi-lvm-provisioner
     destination: r.fits.cloud/r.metal-stack.io/csi-lvm-provisioner
     match:
       semver: ">= v0.7.0"
-  - source: r.metal-stack.io/droptailer:v0.2.12
+  - source: r.metal-stack.io/droptailer
     destination: r.fits.cloud/r.metal-stack.io/droptailer
     match:
       semver: ">= v0.2.12"
-  - source: r.metal-stack.io/node-init:v0.1.4
+  - source: r.metal-stack.io/node-init
     destination: r.fits.cloud/r.metal-stack.io/node-init
     match:
       semver: ">= v0.1.4"
