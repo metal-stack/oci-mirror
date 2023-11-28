@@ -80,6 +80,20 @@ func TestConfig_Validate(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "image source contains tag",
+			Images: []ImageMirror{
+				{Source: "abc:v1.0.0", Destination: "cde"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "image destination contains tag",
+			Images: []ImageMirror{
+				{Source: "abc", Destination: "cde:v1.0.0"},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

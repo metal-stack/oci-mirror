@@ -1,13 +1,15 @@
 # Sample oci-mirror config of a fresh installed v1.27 cluster
 # fetched with:
 # kubectl get pods --all-namespaces -o jsonpath="{.items[*].spec['initContainers', 'containers'][*].image}" | tr -s '[[:space:]]' '\n' | sort | uniq -c
+
+
 # destination registries which requires authentication
 registries:
   "r.fits.cloud":
     auth:
       username:
       password:
-
+# images to mirror
 images:
   - source: docker.io/calico/cni
     destination: r.fits.cloud/docker.io/calico/cni

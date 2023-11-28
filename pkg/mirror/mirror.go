@@ -32,6 +32,18 @@ func (m *mirror) Mirror(ctx context.Context) error {
 	var errs []error
 	for _, image := range m.config.Images {
 		m.log.Info("consider mirror from", "source", image.Source, "destination", image.Destination)
+
+		if _, err := name.ParseReference(image.Source); err != nil {
+			m.log.Error("given image source is malformed", "image", image.Source, "error", err)
+			errs = append(errs, err)
+			continue
+		}
+		if _, err := name.ParseReference(image.Destination); err != nil {
+			m.log.Error("given image destination is malformed", "image", image.Destination, "error", err)
+			errs = append(errs, err)
+			continue
+		}
+
 		opts, err := m.getAuthOption(image)
 		if err != nil {
 			m.log.Warn("unable detect auth, continue unauthenticated", "error", err)

@@ -3,8 +3,10 @@ package v1
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/google/go-containerregistry/pkg/name"
 )
 
 // Config defines which images should be mirrored
@@ -87,6 +89,24 @@ func (c Config) Validate() error {
 			_, err := semver.NewConstraint(*image.Match.Semver)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("image.match.semver is invalid, image source:%q, semver:%q %w", image.Source, *image.Match.Semver, err))
+			}
+		}
+
+		srcRef, err := name.ParseReference(image.Source)
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			if !strings.Contains(srcRef.Name(), ":latest") {
+				errs = append(errs, fmt.Errorf("image source contains a tag:%q", srcRef.Name()))
+			}
+		}
+
+		dstRef, err := name.ParseReference(image.Destination)
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			if !strings.Contains(dstRef.Name(), ":latest") {
+				errs = append(errs, fmt.Errorf("image destination contains a tag:%q", dstRef.Name()))
 			}
 		}
 	}
