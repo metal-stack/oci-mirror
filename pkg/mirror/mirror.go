@@ -99,6 +99,7 @@ func (m *mirror) Mirror(ctx context.Context) error {
 			}
 
 			if image.Match.Semver != nil {
+				m.log.Info("image tag match by semver", "image", image.Source, "semver", image.Match.Semver)
 				c, err := semver.NewConstraint(*image.Match.Semver)
 				if err != nil {
 					m.log.Error("unable to parse image match pattern", "error", err)
@@ -126,9 +127,10 @@ func (m *mirror) Mirror(ctx context.Context) error {
 				semverTags = append(semverTags, v)
 			}
 
-			m.log.Info("image tags", "image", image.Source, "tags to copy", tags, "semver tags", semverTags)
+			m.log.Info("image tags", "image", image.Source, "tags to copy", tagsToCopy, "semver tags", semverTags)
 		}
 
+		// If only the last n images
 		sort.Sort(semver.Collection(semverTags))
 
 		if image.Match.Last != nil {

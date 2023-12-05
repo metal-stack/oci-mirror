@@ -45,7 +45,7 @@ type Match struct {
 	// Tags is a exact list of tags to mirror from
 	Tags []string `json:"tags,omitempty"`
 	// Semver defines a semantic version of tags to mirror
-	Semver *string `json:"pattern,omitempty"`
+	Semver *string `json:"semver,omitempty"`
 	// Last defines how many of the latest tags should be mirrored
 	Last *int64 `json:"last,omitempty"`
 }
