@@ -95,7 +95,6 @@ func (m *mirror) Mirror(ctx context.Context) error {
 			}
 
 			if image.Match.Semver != nil {
-				m.log.Info("image tag match by semver", "image", image.Source, "semver", image.Match.Semver)
 				c, err := semver.NewConstraint(*image.Match.Semver)
 				if err != nil {
 					m.log.Error("unable to parse image match pattern", "error", err)
