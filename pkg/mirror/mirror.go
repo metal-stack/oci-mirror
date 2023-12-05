@@ -81,16 +81,12 @@ func (m *mirror) Mirror(ctx context.Context) error {
 			continue
 		}
 
-		m.log.Info("image tags", "image", image.Source, "tags", tags)
-
 		var (
 			tagsToCopy = make(map[string]string)
 			semverTags []*semver.Version
 		)
 
 		for _, tag := range tags {
-			m.log.Info("image tag match eval", "image", image.Source, "tag", tag)
-
 			src := image.Source + ":" + tag
 			dst := image.Destination + ":" + tag
 
