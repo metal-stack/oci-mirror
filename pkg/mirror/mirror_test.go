@@ -73,7 +73,7 @@ func TestMirror(t *testing.T) {
 		Images: []apiv1.ImageMirror{
 			{
 				Source:      srcAlpine,
-				Destination: dstAlpine,
+				Destination: "http://" + dstAlpine,
 				Match: apiv1.Match{
 					Tags: []string{
 						"3.18",

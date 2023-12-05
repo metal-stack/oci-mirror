@@ -38,16 +38,23 @@ func (m *mirror) Mirror(ctx context.Context) error {
 			errs = append(errs, err)
 			continue
 		}
+
+		opts, err := m.getAuthOption(image)
+		if err != nil {
+			m.log.Warn("unable detect auth, continue unauthenticated", "error", err)
+		}
+
+		if strings.HasPrefix(image.Destination, "http://") {
+			opts = append(opts, crane.Insecure)
+			image.Destination = strings.ReplaceAll(image.Destination, "http://", "")
+		}
+
 		if _, err := name.ParseReference(image.Destination); err != nil {
 			m.log.Error("given image destination is malformed", "image", image.Destination, "error", err)
 			errs = append(errs, err)
 			continue
 		}
 
-		opts, err := m.getAuthOption(image)
-		if err != nil {
-			m.log.Warn("unable detect auth, continue unauthenticated", "error", err)
-		}
 		if image.Match.AllTags {
 			m.log.Info("mirror all tags from", "source", image.Source, "destination", image.Destination)
 			err := crane.CopyRepository(image.Source, image.Destination, opts...)

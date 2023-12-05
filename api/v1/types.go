@@ -33,6 +33,7 @@ type ImageMirror struct {
 	// Source defines from which repo the images should pulled from
 	Source string `json:"source,omitempty"`
 	// Destination defines the new image repo the Source should be rewritten
+	// If prefixed with http:// insecure registry is considered
 	Destination string `json:"destination,omitempty"`
 	// Match defines which images to mirror
 	Match Match `json:"match,omitempty"`
