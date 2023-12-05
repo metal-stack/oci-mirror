@@ -65,8 +65,10 @@ func (m *mirror) Mirror(ctx context.Context) error {
 			continue
 		}
 
-		var tagsToCopy = make(map[string]string)
-		var semverTags []*semver.Version
+		var (
+			tagsToCopy = make(map[string]string)
+			semverTags []*semver.Version
+		)
 
 		for _, tag := range tags {
 			src := image.Source + ":" + tag
