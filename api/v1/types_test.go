@@ -81,6 +81,13 @@ func TestConfig_Validate(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "valid insecure destination",
+			Images: []ImageMirror{
+				{Source: "abc", Destination: "http://cde"},
+			},
+			wantErr: false,
+		},
+		{
 			name: "image source contains tag",
 			Images: []ImageMirror{
 				{Source: "abc:v1.0.0", Destination: "cde"},

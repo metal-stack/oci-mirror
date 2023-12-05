@@ -102,6 +102,10 @@ func (c Config) Validate() error {
 			}
 		}
 
+		if strings.HasPrefix(image.Destination, "http://") {
+			image.Destination = strings.ReplaceAll(image.Destination, "http://", "")
+		}
+
 		dstRef, err := name.ParseReference(image.Destination)
 		if err != nil {
 			errs = append(errs, err)
