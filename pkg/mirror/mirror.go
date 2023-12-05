@@ -50,7 +50,7 @@ func (m *mirror) Mirror(ctx context.Context) error {
 			opts = append(opts, auth)
 		}
 
-		m.log.Info("consider mirror from", "source", image.Source, "destination", image.Destination, "options", opts)
+		m.log.Info("consider mirror from", "source", image.Source, "destination", image.Destination)
 
 		if _, err := name.ParseReference(image.Source); err != nil {
 			m.log.Error("given image source is malformed", "image", image.Source, "error", err)
