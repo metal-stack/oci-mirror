@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -26,9 +27,9 @@ func (s *server) run() error {
 	m := mirror.New(s.log, s.config)
 	err := m.Mirror(context.Background())
 	if err != nil {
-		s.log.Error("error mirroring images", "duration", time.Since(start), "error", err)
+		s.log.Error(fmt.Sprintf("error mirroring images, duration %s", time.Since(start)), "error", err)
 		return err
 	}
-	s.log.Info("finished mirroring after", "duration", time.Since(start))
+	s.log.Info(fmt.Sprintf("finished mirroring after %s", time.Since(start)))
 	return nil
 }
