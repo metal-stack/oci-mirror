@@ -109,8 +109,6 @@ func (m *mirror) Mirror(ctx context.Context) error {
 				}
 				if c.Check(v) {
 					tagsToCopy[src] = dst
-				} else {
-					m.log.Info("image to ignore", "image", image.Source, "tag", tag)
 				}
 			}
 
@@ -122,7 +120,7 @@ func (m *mirror) Mirror(ctx context.Context) error {
 				semverTags = append(semverTags, v)
 			}
 
-			m.log.Info("image tags", "image", image.Source, "tags to copy", tagsToCopy, "semver tags", semverTags)
+			m.log.Info("image tags", "image", image.Source, "tags to copy", tagsToCopy)
 		}
 
 		// If only the last n images

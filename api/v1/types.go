@@ -86,6 +86,11 @@ func (c Config) Validate() error {
 			errs = append(errs, fmt.Errorf("source and destination are equal %q:%q", image.Source, image.Destination))
 		}
 
+		match := image.Match
+		if !match.AllTags && len(match.Tags) == 0 && match.Semver == nil && match.Last == nil {
+			errs = append(errs, fmt.Errorf("no image.match criteria given"))
+		}
+
 		if image.Match.Semver != nil {
 			_, err := semver.NewConstraint(*image.Match.Semver)
 			if err != nil {
