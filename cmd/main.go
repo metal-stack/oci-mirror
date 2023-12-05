@@ -58,7 +58,7 @@ var (
 
 			s := newServer(log, config)
 			if err := s.run(); err != nil {
-				log.Error("unable to start mirror", "error", err)
+				log.Error("error during mirror", "error", err)
 				os.Exit(1)
 			}
 			return nil

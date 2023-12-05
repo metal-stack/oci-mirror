@@ -29,24 +29,33 @@ func New(log *slog.Logger, config apiv1.Config) *mirror {
 }
 
 func (m *mirror) Mirror(ctx context.Context) error {
-	var errs []error
+	var (
+		errs []error
+	)
 	for _, image := range m.config.Images {
-		m.log.Info("consider mirror from", "source", image.Source, "destination", image.Destination)
+		var (
+			err  error
+			opts []crane.Option
+		)
+		if strings.HasPrefix(image.Destination, "http://") {
+			opts = append(opts, crane.Insecure)
+			image.Destination = strings.ReplaceAll(image.Destination, "http://", "")
+		}
+
+		auth, err := m.getAuthOption(image)
+		if err != nil {
+			m.log.Warn("unable detect auth, continue unauthenticated", "error", err)
+		}
+		if auth != nil {
+			opts = append(opts, auth)
+		}
+
+		m.log.Info("consider mirror from", "source", image.Source, "destination", image.Destination, "options", opts)
 
 		if _, err := name.ParseReference(image.Source); err != nil {
 			m.log.Error("given image source is malformed", "image", image.Source, "error", err)
 			errs = append(errs, err)
 			continue
-		}
-
-		opts, err := m.getAuthOption(image)
-		if err != nil {
-			m.log.Warn("unable detect auth, continue unauthenticated", "error", err)
-		}
-
-		if strings.HasPrefix(image.Destination, "http://") {
-			opts = append(opts, crane.Insecure)
-			image.Destination = strings.ReplaceAll(image.Destination, "http://", "")
 		}
 
 		if _, err := name.ParseReference(image.Destination); err != nil {
@@ -143,8 +152,7 @@ func (m *mirror) Mirror(ctx context.Context) error {
 	return nil
 }
 
-func (m *mirror) getAuthOption(image apiv1.ImageMirror) ([]crane.Option, error) {
-	var opts []crane.Option
+func (m *mirror) getAuthOption(image apiv1.ImageMirror) (crane.Option, error) {
 	dstRef, err := name.ParseReference(image.Destination)
 	if err != nil {
 		return nil, err
@@ -158,6 +166,5 @@ func (m *mirror) getAuthOption(image apiv1.ImageMirror) ([]crane.Option, error) 
 		Username: registry.Auth.Username,
 		Password: registry.Auth.Password,
 	})
-	opts = append(opts, auth)
-	return opts, nil
+	return auth, nil
 }
