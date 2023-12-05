@@ -81,12 +81,16 @@ func (m *mirror) Mirror(ctx context.Context) error {
 			continue
 		}
 
+		m.log.Info("image tags", "image", image.Source, "tags", tags)
+
 		var (
 			tagsToCopy = make(map[string]string)
 			semverTags []*semver.Version
 		)
 
 		for _, tag := range tags {
+			m.log.Info("image tag match eval", "image", image.Source, "tag", tag)
+
 			src := image.Source + ":" + tag
 			dst := image.Destination + ":" + tag
 
@@ -109,6 +113,8 @@ func (m *mirror) Mirror(ctx context.Context) error {
 				}
 				if c.Check(v) {
 					tagsToCopy[src] = dst
+				} else {
+					m.log.Info("image to ignore", "image", image.Source, "tag", tag)
 				}
 			}
 
@@ -119,6 +125,8 @@ func (m *mirror) Mirror(ctx context.Context) error {
 				}
 				semverTags = append(semverTags, v)
 			}
+
+			m.log.Info("image tags", "image", image.Source, "tags to copy", tags, "semver tags", semverTags)
 		}
 
 		sort.Sort(semver.Collection(semverTags))
