@@ -26,7 +26,7 @@ func (s *server) run() error {
 	m := mirror.New(s.log, s.config)
 	err := m.Mirror(context.Background())
 	if err != nil {
-		s.log.Error("error mirroring images", "error", err)
+		s.log.Error("error mirroring images", "duration", time.Since(start), "error", err)
 		return err
 	}
 	s.log.Info("finished mirroring after", "duration", time.Since(start))

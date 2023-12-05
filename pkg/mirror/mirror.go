@@ -2,6 +2,7 @@ package mirror
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"slices"
@@ -11,6 +12,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 
 	"github.com/Masterminds/semver/v3"
 	apiv1 "github.com/metal-stack/oci-mirror/api/v1"
@@ -139,7 +141,23 @@ func (m *mirror) Mirror(ctx context.Context) error {
 				opts = append(opts, crane.WithNoClobber(false))
 			}
 			m.log.Info("mirror from", "source", src, "destination", dst)
-			err := crane.Copy(src, dst, opts...)
+			rawmanifest, err := crane.Manifest(src, opts...)
+			if err != nil {
+				m.log.Error("unable to read image manifest", "error", err)
+				errs = append(errs, err)
+				continue
+			}
+			manifest := v1.Manifest{}
+			if err := json.Unmarshal(rawmanifest, &manifest); err != nil {
+				m.log.Error("unable to decode image manifest", "error", err)
+				errs = append(errs, err)
+				continue
+			}
+			if manifest.SchemaVersion < 2 {
+				m.log.Warn("image manifest scheme version to low, ignoring", "image", src, "scheme version", manifest.SchemaVersion)
+				continue
+			}
+			err = crane.Copy(src, dst, opts...)
 			if err != nil {
 				m.log.Error("unable to copy", "source", src, "dst", dst, "error", err)
 				errs = append(errs, err)
