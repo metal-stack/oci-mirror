@@ -112,7 +112,7 @@ func TestMirror(t *testing.T) {
 	tags, err := crane.ListTags(dstAlpine)
 	require.NoError(t, err)
 	require.Len(t, tags, 2)
-	require.Equal(t, []string{"3.18", "latest"}, tags)
+	require.ElementsMatch(t, []string{"3.18", "latest"}, tags)
 
 	tags, err = crane.ListTags(dstBusybox)
 	require.NoError(t, err)
