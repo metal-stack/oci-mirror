@@ -126,7 +126,7 @@ func (m *mirror) Mirror(ctx context.Context) error {
 		// If only the last n images
 		sort.Sort(semver.Collection(semverTags))
 
-		if image.Match.Last != nil {
+		if image.Match.Last != nil && semverTags != nil {
 			for _, v := range semverTags[len(semverTags)-int(*image.Match.Last):] {
 				if slices.Contains(tags, v.String()) {
 					src := image.Source + ":" + v.String()
