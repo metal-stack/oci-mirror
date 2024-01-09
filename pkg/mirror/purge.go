@@ -65,7 +65,7 @@ func (m *mirror) Purge(ctx context.Context) error {
 				}
 			}
 
-			if !image.Purge.NoMatch {
+			if !image.Purge.NoMatch || image.Match.AllTags {
 				continue
 			}
 
@@ -99,7 +99,6 @@ func (m *mirror) Purge(ctx context.Context) error {
 		}
 	}
 
-	// crane.Catalog()
 	if len(errs) > 0 {
 		return errors.Join(errs...)
 	}
