@@ -24,9 +24,14 @@ func TestPurge(t *testing.T) {
 	dstRegistry := fmt.Sprintf("%s:%d", dstip, dstport)
 
 	dstAlpine := fmt.Sprintf("%s/library/alpine", dstRegistry)
+	dstBusybox := fmt.Sprintf("%s/library/busybox", dstRegistry)
 
 	for _, tag := range []string{"foo", "bar", "3.10", "3.11", "3.12", "3.13", "3.14", "3.15", "3.16", "3.17", "3.18", "3.19"} {
 		err = createImage(dstAlpine, tag)
+		require.NoError(t, err)
+	}
+	for _, tag := range []string{"foo", "bar", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6"} {
+		err = createImage(dstBusybox, tag)
 		require.NoError(t, err)
 	}
 
@@ -39,6 +44,16 @@ func TestPurge(t *testing.T) {
 					Semver: pointer.Pointer("<= 3.15"),
 				},
 			},
+			{
+				Source:      dstBusybox,
+				Destination: "http://" + dstBusybox,
+				Match: apiv1.Match{
+					Semver: pointer.Pointer(">= 1.3"),
+				},
+				Purge: &apiv1.Purge{
+					NoMatch: true,
+				},
+			},
 		},
 	}
 
@@ -48,6 +63,12 @@ func TestPurge(t *testing.T) {
 
 	tags, err := crane.ListTags(dstAlpine)
 	require.NoError(t, err)
-	require.Len(t, tags, 6)
 	require.ElementsMatch(t, []string{"bar", "3.16", "3.17", "3.18", "3.19", "latest"}, tags)
+
+	t.Logf("alpine tags:%s", tags)
+
+	tags, err = crane.ListTags(dstBusybox)
+	t.Logf("busybox tags:%s", tags)
+	require.NoError(t, err)
+	require.ElementsMatch(t, []string{"1.3", "1.4", "1.5", "1.6", "latest"}, tags)
 }

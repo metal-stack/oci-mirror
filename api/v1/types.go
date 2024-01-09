@@ -57,6 +57,9 @@ type Purge struct {
 	Tags []string `json:"tags,omitempty"`
 	// Semver defines a semantic version of tags to purge
 	Semver *string `json:"semver,omitempty"`
+	// NoMatch if set to true, all images which are not matched by the Match specification will be purged.
+	// latest will never be purged
+	NoMatch bool `json:"no_match,omitempty"`
 }
 
 func (c Config) Validate() error {
