@@ -22,18 +22,22 @@ func newServer(log *slog.Logger, config apiv1.Config) *server {
 	}
 }
 
-func (s *server) run() error {
+func (s *server) mirror() error {
 	start := time.Now()
-	m := mirror.New(s.log, s.config)
+	m := mirror.New(s.log.WithGroup("mirror"), s.config)
 	err := m.Mirror(context.Background())
 	if err != nil {
 		s.log.Error(fmt.Sprintf("error mirroring images, duration %s", time.Since(start)), "error", err)
 		return err
 	}
 	s.log.Info(fmt.Sprintf("finished mirroring after %s", time.Since(start)))
+	return nil
+}
 
-	start = time.Now()
-	err = m.Purge(context.Background())
+func (s *server) purge() error {
+	start := time.Now()
+	m := mirror.New(s.log.WithGroup("purge"), s.config)
+	err := m.Purge(context.Background())
 	if err != nil {
 		s.log.Error(fmt.Sprintf("error purging images, duration %s", time.Since(start)), "error", err)
 		return err

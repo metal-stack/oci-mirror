@@ -108,7 +108,7 @@ func (c Config) Validate() error {
 		}
 
 		if image.Purge != nil && image.Purge.Semver != nil {
-			_, err := semver.NewConstraint(*image.Match.Semver)
+			_, err := semver.NewConstraint(*image.Purge.Semver)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("image.purge.semver is invalid, image source:%q, semver:%q %w", image.Source, *image.Purge.Semver, err))
 			}

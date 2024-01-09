@@ -57,8 +57,47 @@ var (
 			}
 
 			s := newServer(log, config)
-			if err := s.run(); err != nil {
+			if err := s.mirror(); err != nil {
 				log.Error("error during mirror", "error", err)
+				os.Exit(1)
+			}
+			return nil
+		},
+	}
+	purgeCmd = &cli.Command{
+		Name:  "purge",
+		Usage: "purge images as specified in configuration",
+		Flags: []cli.Flag{
+			debugFlag,
+			configMapFlag,
+		},
+		Action: func(ctx *cli.Context) error {
+			level := slog.LevelInfo
+			if ctx.Bool(debugFlag.Name) {
+				level = slog.LevelDebug
+			}
+			jsonHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})
+			log := slog.New(jsonHandler)
+
+			log.Info("start purge", "version", v.V.String())
+			raw, err := os.ReadFile(ctx.String(configMapFlag.Name))
+			if err != nil {
+				return fmt.Errorf("unable to read config file:%w", err)
+			}
+			var config apiv1.Config
+			err = yaml.Unmarshal(raw, &config)
+			if err != nil {
+				return fmt.Errorf("unable to parse config file:%w", err)
+			}
+
+			err = config.Validate()
+			if err != nil {
+				return fmt.Errorf("config invalid:%w", err)
+			}
+
+			s := newServer(log, config)
+			if err := s.purge(); err != nil {
+				log.Error("error during purge", "error", err)
 				os.Exit(1)
 			}
 			return nil
@@ -72,6 +111,7 @@ func main() {
 		Usage: "oci mirror server",
 		Commands: []*cli.Command{
 			mirrorCmd,
+			purgeCmd,
 		},
 	}
 

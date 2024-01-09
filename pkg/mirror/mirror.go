@@ -97,19 +97,12 @@ func (m *mirror) Mirror(ctx context.Context) error {
 			}
 
 			if image.Match.Semver != nil {
-				c, err := semver.NewConstraint(*image.Match.Semver)
+				ok, err := m.tagMatches(image.Source, tag, *image.Match.Semver)
 				if err != nil {
-					m.log.Error("unable to parse image match pattern", "error", err)
 					errs = append(errs, err)
 					continue
 				}
-				v, err := semver.NewVersion(tag)
-				if err != nil {
-					m.log.Debug("pattern given, ignoring non-semver", "image", image.Source, "tag", tag)
-					// This is not treated as an error
-					continue
-				}
-				if c.Check(v) {
+				if ok {
 					tagsToCopy[src] = dst
 				}
 			}
@@ -186,4 +179,22 @@ func (m *mirror) getAuthOption(image apiv1.ImageMirror) (crane.Option, error) {
 		Password: registry.Auth.Password,
 	})
 	return auth, nil
+}
+
+func (m *mirror) tagMatches(source, tag, semverstring string) (bool, error) {
+	c, err := semver.NewConstraint(semverstring)
+	if err != nil {
+		m.log.Error("unable to parse image match pattern", "error", err)
+		return false, err
+	}
+	v, err := semver.NewVersion(tag)
+	if err != nil {
+		m.log.Debug("pattern given, ignoring non-semver", "image", source, "tag", tag)
+		// This is not treated as an error
+		return false, nil // nolint:nilerr
+	}
+	if c.Check(v) {
+		return true, nil
+	}
+	return false, nil
 }

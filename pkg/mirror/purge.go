@@ -6,7 +6,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-containerregistry/pkg/crane"
 )
 
@@ -55,19 +54,12 @@ func (m *mirror) Purge(ctx context.Context) error {
 			}
 
 			if image.Purge.Semver != nil {
-				c, err := semver.NewConstraint(*image.Purge.Semver)
+				ok, err := m.tagMatches(image.Destination, tag, *image.Purge.Semver)
 				if err != nil {
-					m.log.Error("unable to parse image purge pattern", "error", err)
 					errs = append(errs, err)
 					continue
 				}
-				v, err := semver.NewVersion(tag)
-				if err != nil {
-					m.log.Debug("pattern given, ignoring non-semver", "image", image.Source, "tag", tag)
-					// This is not treated as an error
-					continue
-				}
-				if c.Check(v) {
+				if ok {
 					tagsToPurge = append(tagsToPurge, dst)
 				}
 			}
