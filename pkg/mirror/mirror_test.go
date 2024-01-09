@@ -2,6 +2,7 @@ package mirror_test
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"log/slog"
 	"os"
@@ -170,7 +171,13 @@ func startRegistry(env map[string]string, src, dst *string) (string, int, error)
 }
 
 func createImage(name string, tags ...string) error {
-	img, err := crane.Image(map[string][]byte{})
+	// ensure every image has distinct content
+	buf := make([]byte, 128)
+	_, err := rand.Read(buf)
+	if err != nil {
+		return err
+	}
+	img, err := crane.Image(map[string][]byte{"a": buf})
 	if err != nil {
 		return err
 	}

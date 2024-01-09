@@ -37,6 +37,8 @@ type ImageMirror struct {
 	Destination string `json:"destination,omitempty"`
 	// Match defines which images to mirror
 	Match Match `json:"match,omitempty"`
+	// Purge defines which images should be purged
+	Purge *Purge `json:"purge,omitempty"`
 }
 
 type Match struct {
@@ -48,6 +50,13 @@ type Match struct {
 	Semver *string `json:"semver,omitempty"`
 	// Last defines how many of the latest tags should be mirrored
 	Last *int64 `json:"last,omitempty"`
+}
+
+type Purge struct {
+	// Tags is a exact list of tags to purge
+	Tags []string `json:"tags,omitempty"`
+	// Semver defines a semantic version of tags to purge
+	Semver *string `json:"semver,omitempty"`
 }
 
 func (c Config) Validate() error {
@@ -95,6 +104,13 @@ func (c Config) Validate() error {
 			_, err := semver.NewConstraint(*image.Match.Semver)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("image.match.semver is invalid, image source:%q, semver:%q %w", image.Source, *image.Match.Semver, err))
+			}
+		}
+
+		if image.Purge != nil && image.Purge.Semver != nil {
+			_, err := semver.NewConstraint(*image.Match.Semver)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("image.purge.semver is invalid, image source:%q, semver:%q %w", image.Source, *image.Purge.Semver, err))
 			}
 		}
 
