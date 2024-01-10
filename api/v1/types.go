@@ -58,7 +58,6 @@ type Purge struct {
 	// Semver defines a semantic version of tags to purge
 	Semver *string `json:"semver,omitempty"`
 	// NoMatch if set to true, all images which are not matched by the Match specification will be purged.
-	// Ignored if Match.AllTags is true
 	// latest will never be purged
 	NoMatch bool `json:"no_match,omitempty"`
 }

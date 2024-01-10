@@ -30,6 +30,7 @@ func (m *mirror) Mirror(ctx context.Context) error {
 		errs []error
 	)
 	for _, image := range m.config.Images {
+		image := image
 		var (
 			err  error
 			opts []crane.Option

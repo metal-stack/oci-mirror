@@ -14,6 +14,7 @@ func (m *mirror) Purge(ctx context.Context) error {
 		errs []error
 	)
 	for _, image := range m.config.Images {
+		image := image
 		if image.Purge == nil {
 			continue
 		}
