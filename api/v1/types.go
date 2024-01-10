@@ -105,16 +105,19 @@ func (c Config) Validate() error {
 		}
 
 		if image.Match.Semver != nil {
-			_, err := semver.NewConstraint(*image.Match.Semver)
-			if err != nil {
+			if _, err := semver.NewConstraint(*image.Match.Semver); err != nil {
 				errs = append(errs, fmt.Errorf("image.match.semver is invalid, image source:%q, semver:%q %w", image.Source, *image.Match.Semver, err))
 			}
 		}
 
-		if image.Purge != nil && image.Purge.Semver != nil {
-			_, err := semver.NewConstraint(*image.Purge.Semver)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("image.purge.semver is invalid, image source:%q, semver:%q %w", image.Source, *image.Purge.Semver, err))
+		if image.Purge != nil {
+			if image.Purge.Semver != nil {
+				if _, err := semver.NewConstraint(*image.Purge.Semver); err != nil {
+					errs = append(errs, fmt.Errorf("image.purge.semver is invalid, image source:%q, semver:%q %w", image.Source, *image.Purge.Semver, err))
+				}
+			}
+			if image.Purge.NoMatch && image.Match.AllTags {
+				errs = append(errs, fmt.Errorf("image.purge.nomatch and image.match.alltags cannot be set both image source:%q", image.Source))
 			}
 		}
 

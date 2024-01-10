@@ -3,8 +3,8 @@ package mirror
 import (
 	"context"
 	"errors"
+	"net/url"
 	"slices"
-	"strings"
 
 	"github.com/google/go-containerregistry/pkg/crane"
 )
@@ -23,18 +23,12 @@ func (m *mirror) Purge(ctx context.Context) error {
 			opts        []crane.Option
 			tagsToPurge []string
 		)
-		if strings.HasPrefix(image.Destination, "http://") {
-			opts = append(opts, crane.Insecure)
-			image.Destination = strings.ReplaceAll(image.Destination, "http://", "")
-		}
 
-		auth, err := m.getAuthOption(image)
+		opts, err = m.ensureAuthOption(&image)
 		if err != nil {
 			m.log.Warn("unable detect auth, continue unauthenticated", "error", err)
 		}
-		if auth != nil {
-			opts = append(opts, auth)
-		}
+		opts = append(opts, crane.WithContext(ctx))
 
 		tags, err := crane.ListTags(image.Destination)
 		if err != nil {
@@ -65,11 +59,11 @@ func (m *mirror) Purge(ctx context.Context) error {
 				}
 			}
 
-			if !image.Purge.NoMatch || image.Match.AllTags {
+			if !image.Purge.NoMatch {
 				continue
 			}
 
-			tagsToCopy, err := m.getTagsToCopy(image)
+			tagsToCopy, err := m.getTagsToCopy(image, opts)
 			if err != nil {
 				errs = append(errs, err)
 				continue
@@ -98,6 +92,36 @@ func (m *mirror) Purge(ctx context.Context) error {
 			m.log.Info("purged image", "tag", tag, "dst", dst)
 		}
 	}
+
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+	return nil
+}
+
+func (m *mirror) PurgeUnknown(ctx context.Context) error {
+	var (
+		errs       []error
+		catalog    []string
+		registries = make(map[string]bool)
+	)
+
+	for _, image := range m.config.Images {
+		parsed, err := url.Parse(image.Destination)
+		if err != nil {
+			return err
+		}
+
+		registries[parsed.Host] = true
+	}
+	for registry := range registries {
+		c, err := crane.Catalog(registry)
+		if err != nil {
+			return err
+		}
+		catalog = append(catalog, c...)
+	}
+	m.log.Info("catalog", "content", catalog)
 
 	if len(errs) > 0 {
 		return errors.Join(errs...)

@@ -52,12 +52,25 @@ func TestConfig_Validate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "invalid semver",
+			name: "invalid match semver",
 			Images: []ImageMirror{
 				{
 					Source:      "abc",
 					Destination: "abc",
 					Match: Match{
+						Semver: pointer.Pointer("abc"),
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid purge semver",
+			Images: []ImageMirror{
+				{
+					Source:      "abc",
+					Destination: "abc",
+					Purge: &Purge{
 						Semver: pointer.Pointer("abc"),
 					},
 				},
@@ -105,6 +118,22 @@ func TestConfig_Validate(t *testing.T) {
 			name: "no match criteria",
 			Images: []ImageMirror{
 				{Source: "abc", Destination: "cde:v1.0.0"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid purge and alltags set",
+			Images: []ImageMirror{
+				{
+					Source:      "abc",
+					Destination: "abc",
+					Match: Match{
+						AllTags: true,
+					},
+					Purge: &Purge{
+						NoMatch: true,
+					},
+				},
 			},
 			wantErr: true,
 		},
