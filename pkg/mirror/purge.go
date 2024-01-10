@@ -31,7 +31,7 @@ func (m *mirror) Purge(ctx context.Context) error {
 		}
 		opts = append(opts, crane.WithContext(ctx))
 
-		tags, err := crane.ListTags(image.Destination)
+		tags, err := crane.ListTags(image.Destination, opts...)
 		if err != nil {
 			m.log.Error("unable to list tags of", "image", image.Source, "error", err)
 			errs = append(errs, err)
@@ -77,7 +77,7 @@ func (m *mirror) Purge(ctx context.Context) error {
 
 		for _, tag := range tagsToPurge {
 			tag := tag
-			digest, err := crane.Digest(tag)
+			digest, err := crane.Digest(tag, opts...)
 			if err != nil {
 				errs = append(errs, err)
 				continue
