@@ -7,7 +7,7 @@ import (
 	"time"
 
 	apiv1 "github.com/metal-stack/oci-mirror/api/v1"
-	"github.com/metal-stack/oci-mirror/pkg/mirror"
+	"github.com/metal-stack/oci-mirror/pkg/container"
 )
 
 type server struct {
@@ -24,7 +24,7 @@ func newServer(log *slog.Logger, config apiv1.Config) *server {
 
 func (s *server) mirror() error {
 	start := time.Now()
-	m := mirror.New(s.log.WithGroup("mirror"), s.config)
+	m := container.New(s.log.WithGroup("mirror"), s.config)
 	err := m.Mirror(context.Background())
 	if err != nil {
 		s.log.Error(fmt.Sprintf("error mirroring images, duration %s", time.Since(start)), "error", err)
@@ -36,7 +36,7 @@ func (s *server) mirror() error {
 
 func (s *server) purge() error {
 	start := time.Now()
-	m := mirror.New(s.log.WithGroup("purge"), s.config)
+	m := container.New(s.log.WithGroup("purge"), s.config)
 	err := m.Purge(context.Background())
 	if err != nil {
 		s.log.Error(fmt.Sprintf("error purging images, duration %s", time.Since(start)), "error", err)

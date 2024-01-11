@@ -1,4 +1,4 @@
-package mirror_test
+package container_test
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/metal-stack/metal-lib/pkg/pointer"
 	apiv1 "github.com/metal-stack/oci-mirror/api/v1"
-	"github.com/metal-stack/oci-mirror/pkg/mirror"
+	"github.com/metal-stack/oci-mirror/pkg/container"
 	"github.com/stretchr/testify/require"
 )
 
@@ -66,7 +66,7 @@ func TestPurge(t *testing.T) {
 		},
 	}
 
-	m := mirror.New(slog.Default(), config)
+	m := container.New(slog.Default(), config)
 	err = m.Purge(context.Background())
 	require.NoError(t, err)
 
