@@ -3,8 +3,9 @@ package mirror
 import (
 	"context"
 	"errors"
-	"net/url"
+	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/crane"
 )
@@ -75,22 +76,9 @@ func (m *mirror) Purge(ctx context.Context) error {
 
 		}
 
-		for _, tag := range tagsToPurge {
-			tag := tag
-			digest, err := crane.Digest(tag, opts...)
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
-
-			dst := image.Destination + "@" + digest
-			m.log.Info("purge image", "tag", tag, "dst", dst)
-			err = crane.Delete(dst, opts...)
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
-			m.log.Info("purged image", "tag", tag, "dst", dst)
+		err = m.purge(image.Destination, tagsToPurge, opts)
+		if err != nil {
+			errs = append(errs, err)
 		}
 	}
 
@@ -102,30 +90,74 @@ func (m *mirror) Purge(ctx context.Context) error {
 
 func (m *mirror) PurgeUnknown(ctx context.Context) error {
 	var (
-		errs       []error
-		catalog    []string
-		registries = make(map[string]bool)
+		existing []string
+		allowed  []string
+		purgable []string
 	)
+	registries, err := m.affectedRegistries(destinationRegistry)
+	if err != nil {
+		return err
+	}
+	for _, registry := range registries {
+		catalog, err := crane.Catalog(registry)
+		if err != nil {
+			return err
+		}
+		for _, c := range catalog {
+			image := fmt.Sprintf("%s/%s", registry, c)
+
+			tags, err := crane.ListTags(image)
+			if err != nil {
+				return err
+			}
+			for _, tag := range tags {
+				tag := tag
+				// never purge latest
+				if tag == "latest" {
+					continue
+				}
+				existing = append(existing, image+":"+tag)
+			}
+		}
+	}
+	m.log.Info("existing", "images", existing)
 
 	for _, image := range m.config.Images {
-		parsed, err := url.Parse(image.Destination)
+		image := image
+		var (
+			err  error
+			opts []crane.Option
+		)
+		opts, err = m.ensureAuthOption(&image)
+		if err != nil {
+			m.log.Warn("unable detect auth, continue unauthenticated", "error", err)
+		}
+		opts = append(opts, crane.WithContext(ctx))
+		// FIXME howto handle match.Alltags
+
+		tagsToCopy, err := m.getTagsToCopy(image, opts)
+		if err != nil {
+			return fmt.Errorf("unable to get tags to copy:%w", err)
+		}
+		allowed = append(allowed, tagsToCopy.destinationTags()...)
+	}
+	m.log.Info("allowed", "images", allowed)
+
+	for _, image := range existing {
+		if !slices.Contains(allowed, image) {
+			purgable = append(purgable, image)
+		}
+	}
+	m.log.Info("purgable", "images", purgable)
+
+	for _, tag := range purgable {
+		// tag is the whole image refspec, split away the tag to get the image alone
+		lastInd := strings.LastIndex(tag, ":")
+		image := tag[:lastInd]
+		err := m.purge(image, []string{tag}, nil)
 		if err != nil {
 			return err
 		}
-
-		registries[parsed.Host] = true
-	}
-	for registry := range registries {
-		c, err := crane.Catalog(registry)
-		if err != nil {
-			return err
-		}
-		catalog = append(catalog, c...)
-	}
-	m.log.Info("catalog", "content", catalog)
-
-	if len(errs) > 0 {
-		return errors.Join(errs...)
 	}
 	return nil
 }

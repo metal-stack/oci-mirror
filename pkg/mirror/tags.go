@@ -11,6 +11,28 @@ import (
 	apiv1 "github.com/metal-stack/oci-mirror/api/v1"
 )
 
+// // image is in the form:  <registry>/<name>:<tag>
+// type image struct {
+// 	registry string
+// 	name     string
+// 	tags     []tags
+// }
+
+// type tags struct {
+// 	tag    string
+// 	digest string
+// }
+
+type tagsToCopy map[string]string
+
+func (t tagsToCopy) destinationTags() []string {
+	var dsts []string
+	for _, dst := range t {
+		dsts = append(dsts, dst)
+	}
+	return dsts
+}
+
 func (m *mirror) tagMatches(source, tag, semverstring string) (bool, error) {
 	c, err := semver.NewConstraint(semverstring)
 	if err != nil {
@@ -27,16 +49,6 @@ func (m *mirror) tagMatches(source, tag, semverstring string) (bool, error) {
 		return true, nil
 	}
 	return false, nil
-}
-
-type tagsToCopy map[string]string
-
-func (t tagsToCopy) destinationTags() []string {
-	var dsts []string
-	for _, dst := range t {
-		dsts = append(dsts, dst)
-	}
-	return dsts
 }
 
 func (m *mirror) getTagsToCopy(image apiv1.ImageMirror, opts []crane.Option) (tagsToCopy, error) {
@@ -97,4 +109,29 @@ func (m *mirror) getTagsToCopy(image apiv1.ImageMirror, opts []crane.Option) (ta
 		return tagsToCopy, errors.Join(errs...)
 	}
 	return tagsToCopy, nil
+}
+
+func (m *mirror) purge(image string, tags []string, opts []crane.Option) error {
+	var errs []error
+	for _, tag := range tags {
+		tag := tag
+		digest, err := crane.Digest(tag, opts...)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		dst := image + "@" + digest
+		m.log.Info("purge image", "tag", tag, "dst", dst)
+		err = crane.Delete(dst, opts...)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		m.log.Info("purged image", "tag", tag, "dst", dst)
+	}
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+	return nil
 }

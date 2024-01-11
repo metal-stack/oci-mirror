@@ -25,6 +25,7 @@ func TestPurge(t *testing.T) {
 
 	dstAlpine := fmt.Sprintf("%s/library/alpine", dstRegistry)
 	dstBusybox := fmt.Sprintf("%s/library/busybox", dstRegistry)
+	dstFoo := fmt.Sprintf("%s/library/foo", dstRegistry)
 
 	for _, tag := range []string{"foo", "bar", "3.10", "3.11", "3.12", "3.13", "3.14", "3.15", "3.16", "3.17", "3.18", "3.19"} {
 		err = createImage(dstAlpine, tag)
@@ -34,11 +35,19 @@ func TestPurge(t *testing.T) {
 		err = createImage(dstBusybox, tag)
 		require.NoError(t, err)
 	}
+	for _, tag := range []string{"foo", "bar"} {
+		err = createImage(dstFoo, tag)
+		require.NoError(t, err)
+	}
 
 	config := apiv1.Config{
 		Images: []apiv1.ImageMirror{
 			{
+				Source:      dstAlpine,
 				Destination: "http://" + dstAlpine,
+				Match: apiv1.Match{
+					Semver: pointer.Pointer(">= 3.17"),
+				},
 				Purge: &apiv1.Purge{
 					Tags:   []string{"foo"},
 					Semver: pointer.Pointer("<= 3.15"),
