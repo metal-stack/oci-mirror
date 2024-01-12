@@ -11,18 +11,6 @@ import (
 	apiv1 "github.com/metal-stack/oci-mirror/api/v1"
 )
 
-// // image is in the form:  <registry>/<name>:<tag>
-// type image struct {
-// 	registry string
-// 	name     string
-// 	tags     []tags
-// }
-
-// type tags struct {
-// 	tag    string
-// 	digest string
-// }
-
 type tagsToCopy map[string]string
 
 func (t tagsToCopy) destinationTags() []string {

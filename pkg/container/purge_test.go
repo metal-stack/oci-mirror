@@ -153,5 +153,5 @@ func TestPurgeUnknown(t *testing.T) {
 	tags, err = crane.ListTags(dstFoo)
 	t.Logf("foo tags:%s", tags)
 	require.NoError(t, err)
-	require.Len(t, tags, 0)
+	require.Empty(t, tags)
 }
