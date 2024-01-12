@@ -94,10 +94,12 @@ func (m *mirror) PurgeUnknown(ctx context.Context) error {
 		allowed  []string
 		purgable []string
 	)
+	// FIXME crane opts
 	registries, err := m.affectedRegistries(destinationRegistry)
 	if err != nil {
 		return err
 	}
+
 	for _, registry := range registries {
 		catalog, err := crane.Catalog(registry)
 		if err != nil {
@@ -120,8 +122,6 @@ func (m *mirror) PurgeUnknown(ctx context.Context) error {
 			}
 		}
 	}
-	m.log.Info("existing", "images", existing)
-
 	for _, image := range m.config.Images {
 		image := image
 		var (
@@ -141,16 +141,15 @@ func (m *mirror) PurgeUnknown(ctx context.Context) error {
 		}
 		allowed = append(allowed, tagsToCopy.destinationTags()...)
 	}
-	m.log.Info("allowed", "images", allowed)
 
 	for _, image := range existing {
 		if !slices.Contains(allowed, image) {
 			purgable = append(purgable, image)
 		}
 	}
-	m.log.Info("purgable", "images", purgable)
 
 	for _, tag := range purgable {
+		m.log.Info("purge unknown", "images", tag)
 		// tag is the whole image refspec, split away the tag to get the image alone
 		lastInd := strings.LastIndex(tag, ":")
 		image := tag[:lastInd]

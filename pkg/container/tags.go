@@ -117,7 +117,7 @@ func (m *mirror) purge(image string, tags []string, opts []crane.Option) error {
 		tag := tag
 		digest, err := crane.Digest(tag, opts...)
 		if err != nil {
-			errs = append(errs, err)
+			errs = append(errs, fmt.Errorf("unable to get digest for %q %w", tag, err))
 			continue
 		}
 
@@ -125,7 +125,7 @@ func (m *mirror) purge(image string, tags []string, opts []crane.Option) error {
 		m.log.Info("purge image", "tag", tag, "dst", dst)
 		err = crane.Delete(dst, opts...)
 		if err != nil {
-			errs = append(errs, err)
+			errs = append(errs, fmt.Errorf("unable to delete digest %q %w", dst, err))
 			continue
 		}
 		m.log.Info("purged image", "tag", tag, "dst", dst)

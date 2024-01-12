@@ -14,7 +14,10 @@ const (
 
 // affectedRegistries returns a slice of all registries of sources and destinations
 func (m *mirror) affectedRegistries(target registryTarget) ([]string, error) {
-	var result []string
+	var (
+		result     []string
+		registries = make(map[string]bool)
+	)
 	for _, image := range m.config.Images {
 		registry := image.Destination
 		if target == sourceRegistry {
@@ -24,7 +27,10 @@ func (m *mirror) affectedRegistries(target registryTarget) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, parsed.Host)
+		registries[parsed.Host] = true
+	}
+	for registry := range registries {
+		result = append(result, registry)
 	}
 	return result, nil
 }
