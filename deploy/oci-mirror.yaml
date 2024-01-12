@@ -64,6 +64,38 @@ spec:
                     path: oci-mirror.yaml
           restartPolicy: OnFailure
 ---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: oci-mirror-purge-unknown
+  namespace: mirror
+spec:
+  # once a week on every monday at 2:00 o'clock
+  schedule: "0 2 * * 1"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: oci-mirror
+            image: ghcr.io/metal-stack/oci-mirror
+            imagePullPolicy: IfNotPresent
+            args:
+            - purge-unknown
+            - --mirror-config=/config/oci-mirror.yaml
+            volumeMounts:
+              - name: mirror-config
+                mountPath: /config
+          volumes:
+            - name: mirror-config
+              secret:
+                secretName: mirror-config
+                items:
+                  - key: oci-mirror.yaml
+                    path: oci-mirror.yaml
+          restartPolicy: OnFailure
+
+---
 apiVersion: v1
 kind: Secret
 metadata:

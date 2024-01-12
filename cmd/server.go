@@ -45,3 +45,15 @@ func (s *server) purge() error {
 	s.log.Info(fmt.Sprintf("finished purging after %s", time.Since(start)))
 	return nil
 }
+
+func (s *server) purgeUnknown() error {
+	start := time.Now()
+	m := container.New(s.log.WithGroup("purgeunknown"), s.config)
+	err := m.PurgeUnknown(context.Background())
+	if err != nil {
+		s.log.Error(fmt.Sprintf("error purging unknown images, duration %s", time.Since(start)), "error", err)
+		return err
+	}
+	s.log.Info(fmt.Sprintf("finished purging unknown after %s", time.Since(start)))
+	return nil
+}
