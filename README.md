@@ -28,6 +28,7 @@ kubectl apply -f deploy
 
 ## TODO
 
+- [x] support purging
 - [ ] eventually support http(s) artifacts to be stored as OCIs
-- [ ] support Regex Match for image tags
-- [ ] store a OCI artifact which reflects all stored images
+- [ ] ~~~support Regex Match for image tags~~~
+- [ ] store a OCI artifact which reflects all stored images ?

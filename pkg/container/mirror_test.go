@@ -1,7 +1,8 @@
-package mirror_test
+package container_test
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"log/slog"
 	"os"
@@ -12,7 +13,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/metal-stack/metal-lib/pkg/pointer"
 	apiv1 "github.com/metal-stack/oci-mirror/api/v1"
-	"github.com/metal-stack/oci-mirror/pkg/mirror"
+	"github.com/metal-stack/oci-mirror/pkg/container"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -105,7 +106,7 @@ func TestMirror(t *testing.T) {
 		},
 	}
 
-	m := mirror.New(slog.Default(), config)
+	m := container.New(slog.Default(), config)
 	err = m.Mirror(context.Background())
 	require.NoError(t, err)
 
@@ -170,7 +171,13 @@ func startRegistry(env map[string]string, src, dst *string) (string, int, error)
 }
 
 func createImage(name string, tags ...string) error {
-	img, err := crane.Image(map[string][]byte{})
+	// ensure every image has distinct content
+	buf := make([]byte, 128)
+	_, err := rand.Read(buf)
+	if err != nil {
+		return err
+	}
+	img, err := crane.Image(map[string][]byte{"a": buf})
 	if err != nil {
 		return err
 	}

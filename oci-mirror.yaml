@@ -21,11 +21,21 @@ images:
       tags:
         - "3.17"
         - "3.18"
+    # purge defines which tags should be purged, optional
+    purge:
+      # semver spec of tags to purge of this image
+      semver: "<= 3.16"
+      # tags to purge
+      tags:
+        - "foo"
   - source: "busybox"
     destination: "172.17.0.1:5000/library/busybox"
     match:
       # semver will only mirror the tags of the source images which match this semantic version constraint
       semver: ">= 1.35"
+    purge:
+      # no_match will purge all images which are not matched with the above match spec, latest will never be purged
+      no_match: true
   - source: "nginx"
     destination: "172.17.0.1:5000/library/nginx"
     match:
