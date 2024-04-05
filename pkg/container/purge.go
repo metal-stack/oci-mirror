@@ -92,7 +92,7 @@ func (m *mirror) PurgeUnknown(ctx context.Context) error {
 	var (
 		existing []string
 		allowed  []string
-		purgable []string
+		purgeable []string
 	)
 	// FIXME crane opts
 	registries, err := m.affectedRegistries(destinationRegistry)
@@ -144,11 +144,11 @@ func (m *mirror) PurgeUnknown(ctx context.Context) error {
 
 	for _, image := range existing {
 		if !slices.Contains(allowed, image) {
-			purgable = append(purgable, image)
+			purgeable = append(purgeable, image)
 		}
 	}
 
-	for _, tag := range purgable {
+	for _, tag := range purgeable {
 		m.log.Info("purge unknown", "images", tag)
 		// tag is the whole image refspec, split away the tag to get the image alone
 		lastInd := strings.LastIndex(tag, ":")
