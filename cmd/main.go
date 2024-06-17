@@ -103,7 +103,7 @@ var (
 			return nil
 		},
 	}
-	purgeUnknwonCmd = &cli.Command{
+	purgeUnknownCmd = &cli.Command{
 		Name:  "purge-unknown",
 		Usage: "purge unknown images according to the configuration",
 		Flags: []cli.Flag{
@@ -151,7 +151,7 @@ func main() {
 		Commands: []*cli.Command{
 			mirrorCmd,
 			purgeCmd,
-			purgeUnknwonCmd,
+			purgeUnknownCmd,
 		},
 	}
 
