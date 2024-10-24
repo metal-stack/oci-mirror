@@ -84,7 +84,8 @@ func (m *mirror) getTagsToCopy(image apiv1.ImageMirror, opts []crane.Option) (ta
 	sort.Sort(semver.Collection(semverTags))
 
 	if image.Match.Last != nil && semverTags != nil {
-		for _, v := range semverTags[len(semverTags)-int(*image.Match.Last):] {
+		tagsCount := int64(len(semverTags)) - *image.Match.Last
+		for _, v := range semverTags[tagsCount:] {
 			if slices.Contains(tags, v.String()) {
 				src := image.Source + ":" + v.String()
 				dst := image.Destination + ":" + v.String()
