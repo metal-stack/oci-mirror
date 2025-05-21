@@ -30,7 +30,9 @@ func TestMirror(t *testing.T) {
 
 	f, err := os.CreateTemp("", "htpasswd")
 	require.NoError(t, err)
-	defer os.Remove(f.Name())
+	defer func() {
+		_ = os.Remove(f.Name())
+	}()
 
 	err = htpasswd.SetPassword(f.Name(), "user", "secret", htpasswd.HashBCrypt)
 	require.NoError(t, err)
@@ -136,7 +138,7 @@ func startRegistry(env map[string]string, src, dst *string) (string, int, error)
 	)
 
 	req := testcontainers.ContainerRequest{
-		Image:        "registry:2",
+		Image:        "registry:3",
 		ExposedPorts: []string{"5000/tcp"},
 		Env:          env,
 		WaitingFor: wait.ForAll(
