@@ -68,9 +68,21 @@ jobs:
         tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.tag }}
         file: Dockerfile
 
-    - name: Sign docker image
+    - name: Sign image and attest sbom
       run: |
+        cosign attest --yes --key env://COSIGN_PRIVATE_KEY --predicate sbom.spdx.json --type spdx ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.tag }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
         cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.tag }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
       env:
         COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
         COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+
+    - uses: 'google-github-actions/auth@v2'
+      with:
+        project_id: metal-stack
+        workload_identity_provider: projects/723287855471/locations/global/workloadIdentityPools/github
+
+    - name: Sign image and attest sbom with Google OIDC
+      run: |
+        cosign sign --yes --oidc-issuer=https://accounts.google.com ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.tag }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
+      env:
+        GOOGLE_SERVICE_ACCOUNT_NAME: keyless@metal-stack.iam.gserviceaccount.com
