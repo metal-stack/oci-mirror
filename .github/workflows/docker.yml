@@ -70,7 +70,6 @@ jobs:
 
     - name: Sign image and attest sbom
       run: |
-        cosign attest --yes --key env://COSIGN_PRIVATE_KEY --predicate sbom.spdx.json --type spdx ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.tag }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
         cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.tag }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
       env:
         COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
