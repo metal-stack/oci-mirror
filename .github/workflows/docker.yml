@@ -82,13 +82,15 @@ jobs:
         COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
 
     - uses: 'google-github-actions/auth@v2'
+      id: google_auth
       with:
         id_token_audience: sigstore
         project_id: metal-stack
         workload_identity_provider: projects/723287855471/locations/global/workloadIdentityPools/github/providers/github-actions
+        service_account: keyless@metal-stack.iam.gserviceaccount.com
 
     - name: Sign image and attest sbom with Google OIDC
       run: |
-        cosign sign --yes --oidc-provider=google --oidc-issuer=https://accounts.google.com ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.tag }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
+        cosign sign --yes --identity-token=${{ steps.google_auth.outputs.id_token }} --oidc-provider=google --oidc-issuer=https://accounts.google.com ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.tag }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
       env:
         GOOGLE_SERVICE_ACCOUNT_NAME: keyless@metal-stack.iam.gserviceaccount.com
