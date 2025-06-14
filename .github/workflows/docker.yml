@@ -92,4 +92,4 @@ jobs:
 
     - name: Sign image with Google OIDC
       run: |
-        cosign sign --yes --identity-token=$(gcloud auth print-identity-token) ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.tag }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
+        cosign sign --yes --identity-token=$(gcloud auth print-identity-token --audiences sigstore) ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.tag }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
