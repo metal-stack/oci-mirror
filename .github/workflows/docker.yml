@@ -14,11 +14,17 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  
+
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+      packages: 'write'
+
     steps:
     - name: Log in to the Container registry
       uses: docker/login-action@v3
@@ -30,6 +36,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Install Cosign
+      uses: sigstore/cosign-installer@v3
+
     - name: Setup Go
       uses: actions/setup-go@v5
       with:
@@ -37,24 +46,48 @@ jobs:
         cache: false
 
     - name: Lint
-      uses: golangci/golangci-lint-action@v7
+      uses: golangci/golangci-lint-action@v8
       with:
         args: --timeout=5m
 
     - name: Build and test
       run: |
+        cosign dockerfile verify Dockerfile --certificate-oidc-issuer https://accounts.google.com --certificate-identity keyless@distroless.iam.gserviceaccount.com
         make
 
-    - name: Make tag
-      run: |
-        [ "${GITHUB_EVENT_NAME}" == 'pull_request' ] && echo "tag=${GITHUB_HEAD_REF##*/}" >> $GITHUB_ENV || true
-        [ "${GITHUB_EVENT_NAME}" == 'release' ] && echo "tag=${GITHUB_REF##*/}" >> $GITHUB_ENV || true
-        [ "${GITHUB_EVENT_NAME}" == 'push' ] && echo "tag=latest" >> $GITHUB_ENV || true
+    - name: Docker meta
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
     - name: Build and push image
       uses: docker/build-push-action@v6
+      id: build
       with:
         context: .
         push: true
-        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.tag }}
+        sbom: true
+        tags: ${{ steps.meta.outputs.tags }}
         file: Dockerfile
+
+    - uses: google-github-actions/auth@v2
+      id: auth
+      with:
+        workload_identity_provider: projects/723287855471/locations/global/workloadIdentityPools/github/providers/github-actions
+        service_account: keyless@metal-stack.iam.gserviceaccount.com
+        token_format: id_token
+        id_token_audience: sigstore
+        id_token_include_email: true
+
+    - name: Sign image
+      run: |
+        cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${{ steps.meta.outputs.tags }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
+        cosign sign --yes --identity-token=${{ steps.auth.outputs.id_token }} ${{ steps.meta.outputs.tags }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
+      env:
+        COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+        COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
