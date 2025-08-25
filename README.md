@@ -4,7 +4,7 @@ Container and OCI Image Mirror.
 
 `oci-mirror` lets you mirror container images or any other oci artefact between registries.
 It is designed to run on a regular basis, as a [CronJob](https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs) in kubernetes for example.
-Under the hood it uses [go-containerregistry](github.com/google/go-containerregistry) to copy images directly from one registry to another.
+Under the hood it uses [go-containerregistry](https://github.com/google/go-containerregistry) to copy images directly from one registry to another.
 
 ## Configuration
 
