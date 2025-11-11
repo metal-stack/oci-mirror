@@ -54,7 +54,7 @@ func TestMirror(t *testing.T) {
 	srcBusybox := fmt.Sprintf("%s/library/busybox", srcRegistry)
 	dstBusybox := fmt.Sprintf("%s/library/busybox", dstRegistry)
 
-	err = createImage(srcBusybox, "1.35.0", "1.36.0")
+	err = createImage(srcBusybox, "1.35.0", "1.36.0", "1.36.0-preview5")
 	require.NoError(t, err)
 
 	srcFoo := fmt.Sprintf("%s/library/foo", srcRegistry)
@@ -89,6 +89,7 @@ func TestMirror(t *testing.T) {
 				Destination: dstBusybox,
 				Match: apiv1.Match{
 					Semver: pointer.Pointer(">= 1.35"),
+					Tags:   []string{"1.36.0-preview5"},
 				},
 			},
 			{
@@ -119,7 +120,7 @@ func TestMirror(t *testing.T) {
 
 	tags, err = crane.ListTags(dstBusybox)
 	require.NoError(t, err)
-	require.ElementsMatch(t, []string{"1.35.0", "1.36.0"}, tags)
+	require.ElementsMatch(t, []string{"1.35.0", "1.36.0", "1.36.0-preview5"}, tags)
 
 	tags, err = crane.ListTags(dstFoo)
 	require.NoError(t, err)
