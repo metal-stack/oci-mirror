@@ -19,7 +19,7 @@ type Config struct {
 
 // Registry defines a destination registry which requires authentication
 type Registry struct {
-	Auth RegistryAuth `json:"auth,omitempty"`
+	Auth RegistryAuth `json:"auth"`
 }
 
 // RegistryAuth is the authentication for a registry
@@ -36,7 +36,7 @@ type ImageMirror struct {
 	// If prefixed with http:// insecure registry is considered
 	Destination string `json:"destination,omitempty"`
 	// Match defines which images to mirror
-	Match Match `json:"match,omitempty"`
+	Match Match `json:"match"`
 	// Purge defines which images should be purged
 	Purge *Purge `json:"purge,omitempty"`
 }
