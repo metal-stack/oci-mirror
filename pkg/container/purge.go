@@ -15,7 +15,6 @@ func (m *mirror) Purge(ctx context.Context) error {
 		errs []error
 	)
 	for _, image := range m.config.Images {
-		image := image
 		if image.Purge == nil {
 			continue
 		}
@@ -90,8 +89,8 @@ func (m *mirror) Purge(ctx context.Context) error {
 
 func (m *mirror) PurgeUnknown(ctx context.Context) error {
 	var (
-		existing []string
-		allowed  []string
+		existing  []string
+		allowed   []string
 		purgeable []string
 	)
 	// FIXME crane opts
@@ -113,7 +112,6 @@ func (m *mirror) PurgeUnknown(ctx context.Context) error {
 				return err
 			}
 			for _, tag := range tags {
-				tag := tag
 				// never purge latest
 				if tag == "latest" {
 					continue
@@ -123,7 +121,6 @@ func (m *mirror) PurgeUnknown(ctx context.Context) error {
 		}
 	}
 	for _, image := range m.config.Images {
-		image := image
 		var (
 			err  error
 			opts []crane.Option

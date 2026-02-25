@@ -103,7 +103,6 @@ func (m *mirror) getTagsToCopy(image apiv1.ImageMirror, opts []crane.Option) (ta
 func (m *mirror) purge(image string, tags []string, opts []crane.Option) error {
 	var errs []error
 	for _, tag := range tags {
-		tag := tag
 		digest, err := crane.Digest(tag, opts...)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("unable to get digest for %q %w", tag, err))

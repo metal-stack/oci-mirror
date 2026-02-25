@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/crane"
-	"github.com/metal-stack/metal-lib/pkg/pointer"
 	apiv1 "github.com/metal-stack/oci-mirror/api/v1"
 	"github.com/metal-stack/oci-mirror/pkg/container"
 	"github.com/stretchr/testify/require"
@@ -46,18 +45,18 @@ func TestPurge(t *testing.T) {
 				Source:      dstAlpine,
 				Destination: "http://" + dstAlpine,
 				Match: apiv1.Match{
-					Semver: pointer.Pointer(">= 3.17"),
+					Semver: new(">= 3.17"),
 				},
 				Purge: &apiv1.Purge{
 					Tags:   []string{"foo"},
-					Semver: pointer.Pointer("<= 3.15"),
+					Semver: new("<= 3.15"),
 				},
 			},
 			{
 				Source:      dstBusybox,
 				Destination: "http://" + dstBusybox,
 				Match: apiv1.Match{
-					Semver: pointer.Pointer(">= 1.3"),
+					Semver: new(">= 1.3"),
 				},
 				Purge: &apiv1.Purge{
 					NoMatch: true,
@@ -115,18 +114,18 @@ func TestPurgeUnknown(t *testing.T) {
 				Source:      dstAlpine,
 				Destination: "http://" + dstAlpine,
 				Match: apiv1.Match{
-					Semver: pointer.Pointer(">= 3.17"),
+					Semver: new(">= 3.17"),
 				},
 				Purge: &apiv1.Purge{
 					Tags:   []string{"foo"},
-					Semver: pointer.Pointer("<= 3.15"),
+					Semver: new("<= 3.15"),
 				},
 			},
 			{
 				Source:      dstBusybox,
 				Destination: "http://" + dstBusybox,
 				Match: apiv1.Match{
-					Semver: pointer.Pointer(">= 1.3"),
+					Semver: new(">= 1.3"),
 				},
 				Purge: &apiv1.Purge{
 					NoMatch: true,

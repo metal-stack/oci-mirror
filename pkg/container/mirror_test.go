@@ -11,7 +11,6 @@ import (
 	"github.com/foomo/htpasswd"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/crane"
-	"github.com/metal-stack/metal-lib/pkg/pointer"
 	apiv1 "github.com/metal-stack/oci-mirror/api/v1"
 	"github.com/metal-stack/oci-mirror/pkg/container"
 	"github.com/stretchr/testify/require"
@@ -42,7 +41,7 @@ func TestMirror(t *testing.T) {
 		"REGISTRY_AUTH_HTPASSWD_REALM": "registry-login",
 		"REGISTRY_AUTH_HTPASSWD_PATH":  "/htpasswd",
 	}
-	authtip, authport, err := startRegistry(env, pointer.Pointer(f.Name()), pointer.Pointer("/htpasswd"))
+	authtip, authport, err := startRegistry(env, new(f.Name()), new("/htpasswd"))
 	require.NoError(t, err)
 	authRegistry := fmt.Sprintf("%s:%d", authtip, authport)
 
@@ -88,7 +87,7 @@ func TestMirror(t *testing.T) {
 				Source:      srcBusybox,
 				Destination: dstBusybox,
 				Match: apiv1.Match{
-					Semver: pointer.Pointer(">= 1.35"),
+					Semver: new(">= 1.35"),
 					Tags:   []string{"1.36.0-preview5"},
 				},
 			},
@@ -96,14 +95,14 @@ func TestMirror(t *testing.T) {
 				Source:      srcFoo,
 				Destination: dstFoo,
 				Match: apiv1.Match{
-					Last: pointer.Pointer(int64(2)),
+					Last: new(int64(2)),
 				},
 			},
 			{
 				Source:      srcFoo,
 				Destination: dstAuthFoo,
 				Match: apiv1.Match{
-					Last: pointer.Pointer(int64(2)),
+					Last: new(int64(2)),
 				},
 			},
 		},

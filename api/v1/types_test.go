@@ -2,8 +2,6 @@ package v1
 
 import (
 	"testing"
-
-	"github.com/metal-stack/metal-lib/pkg/pointer"
 )
 
 func TestConfig_Validate(t *testing.T) {
@@ -58,7 +56,7 @@ func TestConfig_Validate(t *testing.T) {
 					Source:      "abc",
 					Destination: "abc",
 					Match: Match{
-						Semver: pointer.Pointer("abc"),
+						Semver: new("abc"),
 					},
 				},
 			},
@@ -71,7 +69,7 @@ func TestConfig_Validate(t *testing.T) {
 					Source:      "abc",
 					Destination: "abc",
 					Purge: &Purge{
-						Semver: pointer.Pointer("abc"),
+						Semver: new("abc"),
 					},
 				},
 			},
