@@ -130,7 +130,7 @@ func TestMirror(t *testing.T) {
 	require.ElementsMatch(t, []string{"1.0.1", "1.0.2"}, tags)
 }
 
-func startRegistry(env map[string]string, src, dst *string) (string, int, error) {
+func startRegistry(env map[string]string, src, dst *string) (string, uint16, error) {
 	ctx := context.Background()
 	var (
 		c   testcontainers.Container
@@ -166,10 +166,10 @@ func startRegistry(env map[string]string, src, dst *string) (string, int, error)
 	}
 	port, err := c.MappedPort(ctx, "5000")
 	if err != nil {
-		return ip, port.Int(), err
+		return ip, port.Num(), err
 	}
 
-	return ip, port.Int(), nil
+	return ip, port.Num(), nil
 }
 
 func createImage(name string, tags ...string) error {
