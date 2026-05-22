@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	retry "github.com/avast/retry-go"
+	retry "github.com/avast/retry-go/v5"
 )
 
 type retryPolicy struct {
@@ -28,16 +28,15 @@ func (m *mirror) withRetry(operation, image string, fn func() error) error {
 
 func (m *mirror) withRetryPolicy(operation, image string, policy retryPolicy, fn func() error) error {
 
-	return retry.Do(
-		fn,
+	return retry.New(
 		retry.Attempts(uint(policy.MaxAttempts)),
 		retry.Delay(policy.InitialDelay),
 		retry.MaxDelay(policy.MaxDelay),
 		retry.RetryIf(isRetryable),
 		retry.OnRetry(func(attempt uint, err error) {
 			m.log.Warn("transient operation failure, retrying", "operation", operation, "image", image, "attempt", attempt+1, "max_attempts", policy.MaxAttempts, "error", err)
-		}),
-	)
+		})).Do(fn)
+
 }
 
 func isRetryable(err error) bool {
