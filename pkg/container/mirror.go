@@ -64,7 +64,12 @@ func (m *mirror) Mirror(ctx context.Context) error {
 				opts = append(opts, crane.WithNoClobber(false))
 			}
 			m.log.Info("mirror from", "source", src, "destination", dst)
-			rawmanifest, err := crane.Manifest(src, opts...)
+			var rawmanifest []byte
+			err := m.withRetry("read_manifest", src, func() error {
+				var err2 error
+				rawmanifest, err2 = crane.Manifest(src, opts...)
+				return err2
+			})
 			if err != nil {
 				m.log.Error("unable to read image manifest", "error", err)
 				errs = append(errs, err)
@@ -80,7 +85,9 @@ func (m *mirror) Mirror(ctx context.Context) error {
 				m.log.Warn("image manifest scheme version to low, ignoring", "image", src, "scheme version", manifest.SchemaVersion)
 				continue
 			}
-			err = crane.Copy(src, dst, opts...)
+			err = m.withRetry("copy_image", src, func() error {
+				return crane.Copy(src, dst, opts...)
+			})
 			if err != nil {
 				m.log.Error("unable to copy", "source", src, "dst", dst, "error", err)
 				errs = append(errs, err)

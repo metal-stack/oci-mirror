@@ -42,11 +42,16 @@ func (m *mirror) tagMatches(source, tag, semverstring string) (bool, error) {
 func (m *mirror) getTagsToCopy(image apiv1.ImageMirror, opts []crane.Option) (tagsToCopy, error) {
 	var (
 		errs       []error
+		tags       []string
 		tagsToCopy = tagsToCopy{}
 		semverTags []*semver.Version
 	)
 
-	tags, err := crane.ListTags(image.Source, opts...)
+	err := m.withRetry("list_tags", image.Source, func() error {
+		var err2 error
+		tags, err2 = crane.ListTags(image.Source, opts...)
+		return err2
+	})
 	if err != nil {
 		m.log.Error("unable to list tags of", "image", image.Source, "error", err)
 		return nil, fmt.Errorf("unable to list tags of image:%q error %w", image.Source, err)
