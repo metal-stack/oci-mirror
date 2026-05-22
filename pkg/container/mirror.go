@@ -82,7 +82,7 @@ func (m *mirror) Mirror(ctx context.Context) error {
 			}
 
 			_, err = crane.Digest(dst, opts...)
-			if err == nil || strings.HasSuffix(dst, ":latest") {
+			if err == nil && !strings.HasSuffix(dst, ":latest") {
 				m.log.Info("image already exists, skip copy", "image", dst)
 				continue
 			}
