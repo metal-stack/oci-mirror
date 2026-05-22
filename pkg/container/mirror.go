@@ -80,6 +80,14 @@ func (m *mirror) Mirror(ctx context.Context) error {
 				m.log.Warn("image manifest scheme version to low, ignoring", "image", src, "scheme version", manifest.SchemaVersion)
 				continue
 			}
+
+			_, err = crane.Digest(dst, opts...)
+			if err == nil || strings.HasSuffix(dst, ":latest") {
+				m.log.Info("image already exists, skip copy", "image", dst)
+				continue
+			}
+
+			m.log.Info("copy image", "source", src, "destination", dst)
 			err = crane.Copy(src, dst, opts...)
 			if err != nil {
 				m.log.Error("unable to copy", "source", src, "dst", dst, "error", err)
