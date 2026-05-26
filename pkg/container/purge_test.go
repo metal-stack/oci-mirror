@@ -65,7 +65,7 @@ func TestPurge(t *testing.T) {
 		},
 	}
 
-	m := container.New(slog.Default(), config)
+	m := container.New(slog.Default(), config, nil)
 	err = m.Purge(context.Background())
 	require.NoError(t, err)
 
@@ -134,7 +134,7 @@ func TestPurgeUnknown(t *testing.T) {
 		},
 	}
 
-	m := container.New(slog.Default(), config)
+	m := container.New(slog.Default(), config, nil)
 	err = m.PurgeUnknown(context.Background())
 	require.NoError(t, err)
 
