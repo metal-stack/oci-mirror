@@ -5,8 +5,10 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"time"
 
 	apiv1 "github.com/metal-stack/oci-mirror/api/v1"
+	"github.com/metal-stack/oci-mirror/pkg/container"
 	"github.com/metal-stack/v"
 
 	"github.com/urfave/cli/v2"
@@ -24,6 +26,21 @@ var (
 		Usage: "enable debug logging",
 		Value: false,
 	}
+	retryMaxAttemptsFlag = &cli.IntFlag{
+		Name:  "retry.max-attempts",
+		Usage: "maximum retry attempts for transient mirror errors",
+		Value: 10,
+	}
+	retryInitialDelayFlag = &cli.DurationFlag{
+		Name:  "retry.initial-delay",
+		Usage: "initial delay between retry attempts",
+		Value: 10 * time.Second,
+	}
+	retryMaxDelayFlag = &cli.DurationFlag{
+		Name:  "retry.max-delay",
+		Usage: "maximum delay between retry attempts",
+		Value: 5 * time.Minute,
+	}
 
 	mirrorCmd = &cli.Command{
 		Name:  "mirror",
@@ -31,6 +48,9 @@ var (
 		Flags: []cli.Flag{
 			debugFlag,
 			configMapFlag,
+			retryMaxAttemptsFlag,
+			retryInitialDelayFlag,
+			retryMaxDelayFlag,
 		},
 		Action: func(ctx *cli.Context) error {
 			level := slog.LevelInfo
@@ -56,7 +76,11 @@ var (
 				return fmt.Errorf("config invalid:%w", err)
 			}
 
-			s := newServer(log, config)
+			s := newServer(log, config, &container.RetryPolicy{
+				MaxAttempts:  ctx.Int(retryMaxAttemptsFlag.Name),
+				InitialDelay: ctx.Duration(retryInitialDelayFlag.Name),
+				MaxDelay:     ctx.Duration(retryMaxDelayFlag.Name),
+			})
 			if err := s.mirror(); err != nil {
 				log.Error("error during mirror", "error", err)
 				os.Exit(1)
@@ -95,7 +119,7 @@ var (
 				return fmt.Errorf("config invalid:%w", err)
 			}
 
-			s := newServer(log, config)
+			s := newServer(log, config, nil)
 			if err := s.purge(); err != nil {
 				log.Error("error during purge", "error", err)
 				os.Exit(1)
@@ -134,7 +158,7 @@ var (
 				return fmt.Errorf("config invalid:%w", err)
 			}
 
-			s := newServer(log, config)
+			s := newServer(log, config, nil)
 			if err := s.purgeUnknown(); err != nil {
 				log.Error("error during purge", "error", err)
 				os.Exit(1)

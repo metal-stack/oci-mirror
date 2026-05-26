@@ -14,14 +14,16 @@ import (
 )
 
 type mirror struct {
-	log    *slog.Logger
-	config apiv1.Config
+	log         *slog.Logger
+	config      apiv1.Config
+	retryPolicy *RetryPolicy
 }
 
-func New(log *slog.Logger, config apiv1.Config) *mirror {
+func New(log *slog.Logger, config apiv1.Config, retryPolicy *RetryPolicy) *mirror {
 	return &mirror{
-		log:    log,
-		config: config,
+		log:         log,
+		config:      config,
+		retryPolicy: retryPolicy,
 	}
 }
 
@@ -29,6 +31,7 @@ func (m *mirror) Mirror(ctx context.Context) error {
 	var (
 		errs []error
 	)
+	m.log.Debug("start mirroring images", "retryPolicy", m.retryPolicy)
 	for _, image := range m.config.Images {
 		var (
 			err  error
@@ -45,7 +48,9 @@ func (m *mirror) Mirror(ctx context.Context) error {
 
 		if image.Match.AllTags {
 			m.log.Info("mirror all tags from", "source", image.Source, "destination", image.Destination)
-			err := crane.CopyRepository(image.Source, image.Destination, opts...)
+			err := m.withRetry("copy_repository", image.Source, func() error {
+				return crane.CopyRepository(image.Source, image.Destination, opts...)
+			})
 			if err != nil {
 				m.log.Error("unable to copy all images", "image", image.Source, "error", err)
 				errs = append(errs, err)

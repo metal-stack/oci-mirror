@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/foomo/htpasswd"
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -108,7 +109,7 @@ func TestMirror(t *testing.T) {
 		},
 	}
 
-	m := container.New(slog.Default(), config)
+	m := container.New(slog.Default(), config, &container.RetryPolicy{MaxAttempts: 10, InitialDelay: 10 * time.Second, MaxDelay: 5 * time.Minute})
 	err = m.Mirror(context.Background())
 	require.NoError(t, err)
 

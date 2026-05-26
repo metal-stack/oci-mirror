@@ -52,7 +52,7 @@ func TestWithRetryPolicyRetriesUntilSuccess(t *testing.T) {
 	}
 
 	attempts := 0
-	err := m.withRetryPolicy("list_tags", "example/image", retryPolicy{MaxAttempts: 3, InitialDelay: time.Millisecond, MaxDelay: time.Millisecond}, func() error {
+	err := m.withRetryPolicy("list_tags", "example/image", &RetryPolicy{MaxAttempts: 3, InitialDelay: time.Millisecond, MaxDelay: time.Millisecond}, func() error {
 		attempts++
 		if attempts < 3 {
 			return errors.New("connection reset by peer")
@@ -70,7 +70,7 @@ func TestWithRetryPolicyStopsOnPermanentError(t *testing.T) {
 	}
 
 	attempts := 0
-	err := m.withRetryPolicy("list_tags", "example/image", retryPolicy{MaxAttempts: 4, InitialDelay: time.Millisecond, MaxDelay: time.Millisecond}, func() error {
+	err := m.withRetryPolicy("list_tags", "example/image", &RetryPolicy{MaxAttempts: 4, InitialDelay: time.Millisecond, MaxDelay: time.Millisecond}, func() error {
 		attempts++
 		return errors.New("UNAUTHORIZED: authentication required")
 	})
