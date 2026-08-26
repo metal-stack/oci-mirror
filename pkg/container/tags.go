@@ -3,6 +3,7 @@ package container
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"slices"
 	"sort"
 
@@ -12,6 +13,8 @@ import (
 )
 
 type tagsToCopy map[string]string
+
+var semverBuildSuffixTagPattern = regexp.MustCompile(`^(v?\d+\.\d+\.\d+)-\d+-[0-9a-f]{7,}$`)
 
 func (t tagsToCopy) destinationTags() []string {
 	var dsts []string
@@ -27,7 +30,7 @@ func (m *mirror) tagMatches(source, tag, semverstring string) (bool, error) {
 		m.log.Error("unable to parse image match pattern", "error", err)
 		return false, err
 	}
-	v, err := semver.NewVersion(tag)
+	v, err := semver.NewVersion(normalizeSemverTag(tag))
 	if err != nil {
 		m.log.Debug("pattern given, ignoring non-semver", "image", source, "tag", tag)
 		// This is not treated as an error
@@ -37,6 +40,16 @@ func (m *mirror) tagMatches(source, tag, semverstring string) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func normalizeSemverTag(tag string) string {
+	matches := semverBuildSuffixTagPattern.FindStringSubmatch(tag)
+	if len(matches) != 2 {
+		return tag
+	}
+
+	// Treat CI-style build+sha suffixes as build metadata and match on the base version.
+	return matches[1]
 }
 
 func (m *mirror) getTagsToCopy(image apiv1.ImageMirror, opts []crane.Option) (tagsToCopy, error) {
