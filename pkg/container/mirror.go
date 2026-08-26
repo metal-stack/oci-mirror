@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
+	"slices"
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/crane"
@@ -34,75 +35,54 @@ func (m *mirror) Mirror(ctx context.Context) error {
 	m.log.Debug("start mirroring images", "retryPolicy", m.retryPolicy)
 	for _, image := range m.config.Images {
 		var (
-			err  error
-			opts []crane.Option
+			err     error
+			srcOpts []crane.Option
+			dstOpts []crane.Option
 		)
 
-		opts, err = m.ensureAuthOption(&image)
+		srcOpts = append(srcOpts, crane.WithContext(ctx))
+		dstOpts, err = m.ensureAuthOption(&image)
 		if err != nil {
 			m.log.Warn("unable detect auth, continue unauthenticated", "error", err)
 		}
-		opts = append(opts, crane.WithContext(ctx))
+		dstOpts = append(dstOpts, crane.WithContext(ctx))
 
 		m.log.Info("consider mirror from", "source", image.Source, "destination", image.Destination)
 
 		if image.Match.AllTags {
 			m.log.Info("mirror all tags from", "source", image.Source, "destination", image.Destination)
-			err := m.withRetry("copy_repository", image.Source, func() error {
-				return crane.CopyRepository(image.Source, image.Destination, opts...)
+			var tags []string
+			err := m.withRetry("list_tags", image.Source, func() error {
+				var err2 error
+				tags, err2 = crane.ListTags(image.Source, srcOpts...)
+				return err2
 			})
 			if err != nil {
-				m.log.Error("unable to copy all images", "image", image.Source, "error", err)
+				m.log.Error("unable to list tags of", "image", image.Source, "error", err)
 				errs = append(errs, err)
+				continue
+			}
+
+			for _, tag := range tags {
+				src := image.Source + ":" + tag
+				dst := image.Destination + ":" + tag
+				err = m.mirrorTag(src, dst, srcOpts, dstOpts)
+				if err != nil {
+					errs = append(errs, err)
+				}
 			}
 			continue
 		}
 
-		tagsToCopy, err := m.getTagsToCopy(image, opts)
+		tagsToCopy, err := m.getTagsToCopy(image, srcOpts)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
 		for src, dst := range tagsToCopy {
-			if !strings.HasSuffix(dst, ":latest") {
-				opts = append(opts, crane.WithNoClobber(false))
-			}
-			m.log.Info("mirror from", "source", src, "destination", dst)
-			var rawmanifest []byte
-			err := m.withRetry("read_manifest", src, func() error {
-				var err2 error
-				rawmanifest, err2 = crane.Manifest(src, opts...)
-				return err2
-			})
+			err = m.mirrorTag(src, dst, srcOpts, dstOpts)
 			if err != nil {
-				m.log.Error("unable to read image manifest", "error", err)
-				errs = append(errs, err)
-				continue
-			}
-			manifest := v1.Manifest{}
-			if err := json.Unmarshal(rawmanifest, &manifest); err != nil {
-				m.log.Error("unable to decode image manifest", "error", err)
-				errs = append(errs, err)
-				continue
-			}
-			if manifest.SchemaVersion < 2 {
-				m.log.Warn("image manifest scheme version to low, ignoring", "image", src, "scheme version", manifest.SchemaVersion)
-				continue
-			}
-
-			_, err = crane.Digest(dst, opts...)
-			if err == nil && !strings.HasSuffix(dst, ":latest") {
-				m.log.Info("image already exists, skip copy", "image", dst)
-				continue
-			}
-
-			m.log.Info("copy image", "source", src, "destination", dst)
-			err = m.withRetry("copy_image", src, func() error {
-				return crane.Copy(src, dst, opts...)
-			})
-			if err != nil {
-				m.log.Error("unable to copy", "source", src, "dst", dst, "error", err)
 				errs = append(errs, err)
 			}
 		}
@@ -111,5 +91,63 @@ func (m *mirror) Mirror(ctx context.Context) error {
 	if len(errs) > 0 {
 		return errors.Join(errs...)
 	}
+	return nil
+}
+
+func (m *mirror) mirrorTag(src, dst string, srcOpts, dstOpts []crane.Option) error {
+	m.log.Info("mirror from", "source", src, "destination", dst)
+
+	var rawmanifest []byte
+	err := m.withRetry("read_manifest", src, func() error {
+		var err2 error
+		rawmanifest, err2 = crane.Manifest(src, srcOpts...)
+		return err2
+	})
+	if err != nil {
+		m.log.Error("unable to read image manifest", "error", err)
+		return err
+	}
+
+	manifest := v1.Manifest{}
+	if err := json.Unmarshal(rawmanifest, &manifest); err != nil {
+		m.log.Error("unable to decode image manifest", "error", err)
+		return err
+	}
+	if manifest.SchemaVersion < 2 {
+		m.log.Warn("image manifest scheme version to low, ignoring", "image", src, "scheme version", manifest.SchemaVersion)
+		return nil
+	}
+
+	tagOpts := slices.Clone(dstOpts)
+	if !strings.HasSuffix(dst, ":latest") {
+		tagOpts = append(tagOpts, crane.WithNoClobber(false))
+	}
+
+	_, err = crane.Digest(dst, tagOpts...)
+	if err == nil && !strings.HasSuffix(dst, ":latest") {
+		m.log.Info("image already exists, skip copy", "image", dst)
+		return nil
+	}
+
+	m.log.Info("copy image", "source", src, "destination", dst)
+	var img v1.Image
+	err = m.withRetry("pull_image", src, func() error {
+		var err2 error
+		img, err2 = crane.Pull(src, srcOpts...)
+		return err2
+	})
+	if err != nil {
+		m.log.Error("unable to pull", "source", src, "error", err)
+		return err
+	}
+
+	err = m.withRetry("push_image", dst, func() error {
+		return crane.Push(img, dst, tagOpts...)
+	})
+	if err != nil {
+		m.log.Error("unable to push", "source", src, "dst", dst, "error", err)
+		return err
+	}
+
 	return nil
 }
