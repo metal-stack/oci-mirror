@@ -138,18 +138,14 @@ func (m *mirror) PurgeUnknown(ctx context.Context) error {
 		}
 	}
 	for _, image := range m.config.Images {
-		var (
-			err  error
-			opts []crane.Option
-		)
-		opts, err = m.ensureAuthOption(&image)
-		if err != nil {
-			m.log.Warn("unable detect auth, continue unauthenticated", "error", err)
-		}
-		opts = append(opts, crane.WithContext(ctx))
+		// getTagsToCopy lists the tags of the source, hence it must be called with
+		// source options, the insecure/auth options are destination specific.
+		// The destination must be normalized to match the scheme-less tags listed
+		// from the registry above.
+		image.Destination = strings.TrimPrefix(image.Destination, "http://")
 		// FIXME howto handle match.Alltags
 
-		tagsToCopy, err := m.getTagsToCopy(image, opts)
+		tagsToCopy, err := m.getTagsToCopy(image, []crane.Option{crane.WithContext(ctx)})
 		if err != nil {
 			return fmt.Errorf("unable to get tags to copy:%w", err)
 		}
