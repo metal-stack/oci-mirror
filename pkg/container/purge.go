@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/google/go-containerregistry/pkg/name"
 )
 
 func (m *mirror) Purge(ctx context.Context) error {
@@ -93,21 +94,37 @@ func (m *mirror) PurgeUnknown(ctx context.Context) error {
 		allowed   []string
 		purgeable []string
 	)
-	// FIXME crane opts
 	registries, err := m.affectedRegistries(destinationRegistry)
 	if err != nil {
 		return err
 	}
 
+	// Collect crane options (insecure + auth) per destination registry from the
+	// configured images, otherwise crane would talk https to an insecure registry.
+	optsByRegistry := make(map[string][]crane.Option, len(registries))
+	for _, image := range m.config.Images {
+		img := image
+		opts, err := m.ensureAuthOption(&img)
+		if err != nil {
+			m.log.Warn("unable detect auth, continue unauthenticated", "error", err)
+		}
+		ref, err := name.ParseReference(img.Destination)
+		if err != nil {
+			continue
+		}
+		optsByRegistry[ref.Context().Registry.Name()] = append(opts, crane.WithContext(ctx))
+	}
+
 	for _, registry := range registries {
-		catalog, err := crane.Catalog(registry)
+		opts := optsByRegistry[registry]
+		catalog, err := crane.Catalog(registry, opts...)
 		if err != nil {
 			return err
 		}
 		for _, c := range catalog {
 			image := fmt.Sprintf("%s/%s", registry, c)
 
-			tags, err := crane.ListTags(image)
+			tags, err := crane.ListTags(image, opts...)
 			if err != nil {
 				return err
 			}
@@ -150,8 +167,12 @@ func (m *mirror) PurgeUnknown(ctx context.Context) error {
 		// tag is the whole image refspec, split away the tag to get the image alone
 		lastInd := strings.LastIndex(tag, ":")
 		image := tag[:lastInd]
-		err := m.purge(image, []string{tag}, nil)
+
+		ref, err := name.ParseReference(image)
 		if err != nil {
+			return err
+		}
+		if err := m.purge(image, []string{tag}, optsByRegistry[ref.Context().Registry.Name()]); err != nil {
 			return err
 		}
 	}
