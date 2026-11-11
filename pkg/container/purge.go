@@ -172,7 +172,8 @@ func (m *mirror) PurgeUnknown(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		if err := m.purge(image, []string{tag}, optsByRegistry[ref.Context().Registry.Name()]); err != nil {
+		err = m.purge(image, []string{tag}, optsByRegistry[ref.Context().Registry.Name()])
+		if err != nil {
 			return err
 		}
 	}
