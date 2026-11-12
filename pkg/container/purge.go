@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/google/go-containerregistry/pkg/name"
 )
 
 func (m *mirror) Purge(ctx context.Context) error {
@@ -93,21 +94,37 @@ func (m *mirror) PurgeUnknown(ctx context.Context) error {
 		allowed   []string
 		purgeable []string
 	)
-	// FIXME crane opts
 	registries, err := m.affectedRegistries(destinationRegistry)
 	if err != nil {
 		return err
 	}
 
+	// Collect crane options (insecure + auth) per destination registry from the
+	// configured images, otherwise crane would talk https to an insecure registry.
+	optsByRegistry := make(map[string][]crane.Option, len(registries))
+	for _, image := range m.config.Images {
+		img := image
+		opts, err := m.ensureAuthOption(&img)
+		if err != nil {
+			m.log.Warn("unable detect auth, continue unauthenticated", "error", err)
+		}
+		ref, err := name.ParseReference(img.Destination)
+		if err != nil {
+			continue
+		}
+		optsByRegistry[ref.Context().Registry.Name()] = append(opts, crane.WithContext(ctx))
+	}
+
 	for _, registry := range registries {
-		catalog, err := crane.Catalog(registry)
+		opts := optsByRegistry[registry]
+		catalog, err := crane.Catalog(registry, opts...)
 		if err != nil {
 			return err
 		}
 		for _, c := range catalog {
 			image := fmt.Sprintf("%s/%s", registry, c)
 
-			tags, err := crane.ListTags(image)
+			tags, err := crane.ListTags(image, opts...)
 			if err != nil {
 				return err
 			}
@@ -121,18 +138,32 @@ func (m *mirror) PurgeUnknown(ctx context.Context) error {
 		}
 	}
 	for _, image := range m.config.Images {
-		var (
-			err  error
-			opts []crane.Option
-		)
-		opts, err = m.ensureAuthOption(&image)
-		if err != nil {
-			m.log.Warn("unable detect auth, continue unauthenticated", "error", err)
-		}
-		opts = append(opts, crane.WithContext(ctx))
-		// FIXME howto handle match.Alltags
+		// The destination must be normalized to match the scheme-less tags listed
+		// from the registry above.
+		image.Destination = strings.TrimPrefix(image.Destination, "http://")
 
-		tagsToCopy, err := m.getTagsToCopy(image, opts)
+		if image.Match.AllTags {
+			// All tags of the source are mirrored, so all of them must be kept.
+			var tags []string
+			err := m.withRetry("list_tags", image.Source, func() error {
+				var err2 error
+				tags, err2 = crane.ListTags(image.Source, crane.WithContext(ctx))
+				return err2
+			})
+			if err != nil {
+				m.log.Error("unable to list tags of", "image", image.Source, "error", err)
+				return fmt.Errorf("unable to list tags of image:%q error %w", image.Source, err)
+			}
+
+			for _, tag := range tags {
+				allowed = append(allowed, image.Destination+":"+tag)
+			}
+			continue
+		}
+
+		// getTagsToCopy lists the tags of the source, hence it must be called with
+		// source options, the insecure/auth options are destination specific.
+		tagsToCopy, err := m.getTagsToCopy(image, []crane.Option{crane.WithContext(ctx)})
 		if err != nil {
 			return fmt.Errorf("unable to get tags to copy:%w", err)
 		}
@@ -150,7 +181,12 @@ func (m *mirror) PurgeUnknown(ctx context.Context) error {
 		// tag is the whole image refspec, split away the tag to get the image alone
 		lastInd := strings.LastIndex(tag, ":")
 		image := tag[:lastInd]
-		err := m.purge(image, []string{tag}, nil)
+
+		ref, err := name.ParseReference(image)
+		if err != nil {
+			return err
+		}
+		err = m.purge(image, []string{tag}, optsByRegistry[ref.Context().Registry.Name()])
 		if err != nil {
 			return err
 		}

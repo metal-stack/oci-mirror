@@ -154,3 +154,41 @@ func TestPurgeUnknown(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, tags)
 }
+
+func TestPurgeUnknownAllTags(t *testing.T) {
+
+	env := map[string]string{
+		"REGISTRY_STORAGE_DELETE_ENABLED": "true",
+	}
+
+	dstip, dstport, err := startRegistry(env, nil, nil)
+	require.NoError(t, err)
+	dstRegistry := fmt.Sprintf("%s:%d", dstip, dstport)
+
+	dstUbuntu := fmt.Sprintf("%s/library/ubuntu", dstRegistry)
+	for _, tag := range []string{"foo", "bar", "20.04", "22.04"} {
+		err = createImage(dstUbuntu, tag)
+		require.NoError(t, err)
+	}
+
+	config := apiv1.Config{
+		Images: []apiv1.ImageMirror{
+			{
+				Source:      dstUbuntu,
+				Destination: "http://" + dstUbuntu,
+				Match: apiv1.Match{
+					AllTags: true,
+				},
+			},
+		},
+	}
+
+	m := container.New(slog.Default(), config, nil)
+	err = m.PurgeUnknown(context.Background())
+	require.NoError(t, err)
+
+	// all tags of the source are mirrored, so purge unknown must keep all of them
+	tags, err := crane.ListTags(dstUbuntu)
+	require.NoError(t, err)
+	require.ElementsMatch(t, []string{"foo", "bar", "20.04", "22.04", "latest"}, tags)
+}
